@@ -59,18 +59,19 @@ class Test_XPath < Test::Unit::TestCase
   #end
 
   test "removes trailing slashes from absolute path" do
-    assert_equal(File.join(@root, 'foo'), File.xpath("#{@root}/foo/"))
-    assert_equal(File.join(@root, 'foo.rb'), File.xpath("#{@root}/foo.rb/"))
+    assert_equal(File.join(@root, 'foo'), File.xpath("#{@root}foo/"))
+    assert_equal(File.join(@root, 'foo.rb'), File.xpath("#{@root}foo.rb/"))
   end
 
   test "removes trailing spaces from absolute path" do
-    assert_equal(File.join(@root, 'foo'), File.xpath("#{@root}/foo  "))
+    assert_equal(File.join(@root, 'foo'), File.xpath("#{@root}foo  "))
   end
 
   test "removes trailing dots from absolute path" do
-    assert_equal(File.join(@root, 'a'), File.xpath("#{@root}/a."))
+    assert_equal(File.join(@root, 'a'), File.xpath("#{@root}a."))
   end
 
+=begin
   #test "removes trailing invalid ':$DATA' from absolute path" do
   #  assert_equal(File.join(@root, 'aaa'), File.xpath("#{@root}/aaa::$DATA"))
   #  assert_equal(File.join(@root, 'aa:a'), File.xpath("#{@root}/aa:a:$DATA"))
@@ -107,6 +108,7 @@ class Test_XPath < Test::Unit::TestCase
   test "converts a pathname to an absolute pathname using '~' as base" do
     assert_equal(@home, File.xpath('~'))
   end
+=end
 
   def teardown
     @pwd = nil
