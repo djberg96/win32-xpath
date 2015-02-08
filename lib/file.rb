@@ -26,8 +26,18 @@ class File
 
       npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
 
+      ptr = FFI::MemoryPointer.from_string(npath)
+
+      while temp = PathRemoveBackslash(ptr)
+        break unless temp.empty?
+      end
+
+      npath = ptr.read_bytes(npath.size * 2)
+
       if dir.nil?
-        return path unless PathIsRelative(npath)
+        unless PathIsRelative(npath)
+          return npath.tr(0.chr, '').tr('\\', '/').encode('UTF-8')
+        end
       end
 
       buf = (0.chr * 1024).encode(WCHAR)
@@ -57,6 +67,6 @@ class File
 end
 
 if $0 == __FILE__
-  p File.xpath("C:/foo").tainted?
-  p File.xpath("foo").tainted?
+  p File.xpath("C:/foo//")
+  #p File.xpath("foo//")
 end
