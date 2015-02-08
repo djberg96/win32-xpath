@@ -25,7 +25,9 @@ class File
 
       npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
 
-      return path unless PathIsRelative(npath)
+      if dir.nil?
+        return path unless PathIsRelative(npath)
+      end
 
       buf = (0.chr * 1024).encode(WCHAR)
 
