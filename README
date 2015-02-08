@@ -1,0 +1,2 @@
+= Description
+  A custom expand_path method for Ruby on Windows that doesn't suck.
