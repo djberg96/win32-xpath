@@ -13,6 +13,7 @@ class File
     ffi_lib :shlwapi
     attach_function :PathIsRoot, :PathIsRootW, [:buffer_in], :bool
     attach_function :PathIsRelative, :PathIsRelativeW, [:buffer_in], :bool
+    attach_function :PathRemoveBackslash, :PathRemoveBackslashW, [:pointer], :string
 
     def xpath(path, dir=nil)
       raise TypeError unless path.is_a?(String)
