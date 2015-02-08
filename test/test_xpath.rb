@@ -94,7 +94,6 @@ class Test_XPath < Test::Unit::TestCase
   end
 
   # These taint rules are STOOOPID
-=begin
   test "returns tainted strings or not" do
     assert_true(File.xpath('foo').tainted?)
     assert_true(File.xpath('foo'.taint).tainted?)
@@ -102,10 +101,9 @@ class Test_XPath < Test::Unit::TestCase
     assert_true(File.xpath('/foo'.taint).tainted?)
     assert_true(File.xpath('C:/foo'.taint).tainted?)
 
-    assert_false(File.xpath('C:/foo').tainted?)
-    assert_false(File.xpath('//foo').tainted?)
+    #assert_false(File.xpath('C:/foo').tainted?)
+    #assert_false(File.xpath('//foo').tainted?)
   end
-=end
 
   test "converts a pathname to an absolute pathname using '~' as base" do
     assert_equal(@home, File.xpath('~'))
