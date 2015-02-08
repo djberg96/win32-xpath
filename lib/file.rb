@@ -25,7 +25,10 @@ class File
 
       return Dir.pwd if path.empty?
 
-      path = ENV['HOME'] if path == '~'
+      if path.include?('~')
+        raise ArgumentError unless ENV['HOME']
+        path = path.sub('~', ENV['HOME'])
+      end
 
       npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
 
