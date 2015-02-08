@@ -58,11 +58,7 @@ class File
 
       result = buf.strip.encode(Encoding::UTF_8).tr('\\', '/')
 
-      if PathIsRelative(buf) || PathIsRelative(npath)
-        result.taint
-      end
-
-      result
+      result.taint
     end
   end
 end
