@@ -27,6 +27,8 @@ class File
 
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
+        home = (ENV['HOME'] + 0.chr).tr('/', '\\').encode(WCHAR)
+        raise ArgumentError if PathIsRelative(home)
         path = path.sub('~', ENV['HOME'])
       end
 
@@ -67,6 +69,6 @@ class File
 end
 
 if $0 == __FILE__
-  p File.xpath("C:/foo")
-  p File.xpath("/foo")
+  ENV['HOME'] = 'C:/'
+  p File.xpath("~")
 end
