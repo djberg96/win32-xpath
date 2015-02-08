@@ -13,6 +13,7 @@ class Test_XPath < Test::Unit::TestCase
     @root =  'C:/'
     @drive = ENV['HOMEDRIVE']
     @home = ENV['HOME'].tr('\\', '/')
+    @unc = "//foo/bar"
   end
 
   test "converts an empty pathname into absolute current pathname" do
@@ -109,8 +110,25 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(@home, File.xpath('~'))
   end
 
+  test "converts a pathname to an absolute pathname using '~' for UNC path" do
+    ENV['HOME'] = @unc
+    assert_equal(@unc, File.xpath('~'))
+  end
+
+  test "does not modify a HOME string argument" do
+    str = "~/a"
+    assert_equal("#{@home}/a", File.xpath(str))
+    assert_equal("~/a", str)
+  end
+
+  test "raises ArgumentError when HOME is nil" do
+    ENV['HOME'] = nil
+    assert_raise(ArgumentError){ File.xpath('~') }
+  end
+
   def teardown
     @pwd = nil
+    @unc = nil
     @dir = nil
     @root = nil
     @drive = nil
