@@ -25,6 +25,8 @@ class File
 
       return Dir.pwd if path.empty?
 
+      path = ENV['HOME'] if path == '~'
+
       npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
 
       ptr = FFI::MemoryPointer.from_string(npath)
@@ -55,7 +57,12 @@ class File
       #end
 
       result = buf.strip.encode(Encoding::UTF_8).tr('\\', '/')
-      result.taint
+
+      if PathIsRelative(buf) || PathIsRelative(npath)
+        result.taint
+      end
+
+      result
     end
   end
 end
