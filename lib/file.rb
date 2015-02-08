@@ -35,18 +35,6 @@ class File
 
       npath = ptr.read_bytes(npath.size * 2)
 
-      if dir.nil?
-        unless PathIsRelative(npath)
-          buf2 = 0.chr * npath.size
-
-          unless PathCanonicalize(buf2, npath)
-            raise SystemCallError.new('PathCanonicalize', FFI.errno)
-          end
-
-          return buf2.tr(0.chr, '').tr('\\', '/').encode('UTF-8').strip
-        end
-      end
-
       buf = (0.chr * 1024).encode(WCHAR)
 
       rv = GetFullPathName(npath, buf.size, buf, nil)
@@ -66,12 +54,6 @@ class File
       #  end
       #end
 
-      buf2 = 0.chr * npath.size
-
-      unless PathCanonicalize(buf2, npath)
-        raise SystemCallError.new('PathCanonicalize', FFI.errno)
-      end
-
       result = buf.strip.encode(Encoding::UTF_8).tr('\\', '/')
       result.taint
     end
@@ -79,5 +61,6 @@ class File
 end
 
 if $0 == __FILE__
-  p File.xpath("C:/a.")
+  p File.xpath("C:/foo")
+  p File.xpath("/foo")
 end
