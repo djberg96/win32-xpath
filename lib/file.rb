@@ -14,6 +14,7 @@ class File
     attach_function :PathIsRoot, :PathIsRootW, [:buffer_in], :bool
     attach_function :PathIsRelative, :PathIsRelativeW, [:buffer_in], :bool
     attach_function :PathRemoveBackslash, :PathRemoveBackslashW, [:pointer], :string
+    attach_function :PathCanonicalize, :PathCanonicalizeW, [:buffer_out, :buffer_in], :bool
 
     def xpath(path, dir=nil)
       raise TypeError unless path.is_a?(String)
@@ -36,7 +37,13 @@ class File
 
       if dir.nil?
         unless PathIsRelative(npath)
-          return npath.tr(0.chr, '').tr('\\', '/').encode('UTF-8').strip
+          buf2 = 0.chr * npath.size
+
+          unless PathCanonicalize(buf2, npath)
+            raise SystemCallError.new('PathCanonicalize', FFI.errno)
+          end
+
+          return buf2.tr(0.chr, '').tr('\\', '/').encode('UTF-8').strip
         end
       end
 
@@ -59,14 +66,18 @@ class File
       #  end
       #end
 
-      result = buf.strip.encode(Encoding::UTF_8).tr('\\', '/')
+      buf2 = 0.chr * npath.size
 
+      unless PathCanonicalize(buf2, npath)
+        raise SystemCallError.new('PathCanonicalize', FFI.errno)
+      end
+
+      result = buf.strip.encode(Encoding::UTF_8).tr('\\', '/')
       result.taint
     end
   end
 end
 
 if $0 == __FILE__
-  p File.xpath("C:/foo//")
-  #p File.xpath("foo//")
+  p File.xpath("C:/a.")
 end
