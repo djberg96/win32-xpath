@@ -36,7 +36,7 @@ class File
 
       if dir.nil?
         unless PathIsRelative(npath)
-          return npath.tr(0.chr, '').tr('\\', '/').encode('UTF-8')
+          return npath.tr(0.chr, '').tr('\\', '/').encode('UTF-8').strip
         end
       end
 
