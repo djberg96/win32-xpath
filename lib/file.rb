@@ -6,6 +6,7 @@ class File
     typedef :ulong, :dword
 
     WCHAR = Encoding::UTF_16LE
+    FILE_ATTRIBUTE_DIRECTORY = 0x00000010
 
     ffi_lib :kernel32
     attach_function :GetFullPathName, :GetFullPathNameW, [:buffer_in, :dword, :pointer, :pointer], :dword
@@ -15,6 +16,7 @@ class File
     attach_function :PathIsRelative, :PathIsRelativeW, [:buffer_in], :bool
     attach_function :PathRemoveBackslash, :PathRemoveBackslashW, [:pointer], :string
     attach_function :PathCanonicalize, :PathCanonicalizeW, [:buffer_out, :buffer_in], :bool
+    attach_function :PathRelativePathTo, :PathRelativePathToW, [:buffer_out, :buffer_in, :dword, :buffer_in, :dword], :bool
 
     def xpath(path, dir=nil)
       path = path.to_path if path.respond_to?(:to_path)
@@ -23,10 +25,15 @@ class File
 
       if dir
         raise TypeError unless dir.is_a?(String)
+
+        ndir = (dir + 0.chr).tr("/", "\\").encode(WCHAR)
+
+        #unless PathIsRoot(ndir)
+          path = File.join(dir,path) # Will be normalized automatically later
+        #end
       end
 
       return Dir.pwd if path.empty?
-
 
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
@@ -58,13 +65,7 @@ class File
         raise SystemCallError.new('GetFullPathName', FFI.errno)
       end
 
-      #if dir
-      #  if PathIsRelative(dir)
-      #  else
-      #  end
-      #end
-
-      result = buf.strip.encode(Encoding::UTF_8).tr('\\', '/')
+      result = buf.strip.encode('UTF-8').tr('\\', '/')
 
       result.taint
     end
@@ -72,5 +73,19 @@ class File
 end
 
 if $0 == __FILE__
-  p File.xpath("./a/b/../c")
+  require 'tmpdir'
+  p File.xpath("foo", "C:/bar")
+  p File.expand_path("foo", "C:/bar")
+  p "="
+
+  p File.xpath("foo", "bar")
+  p File.expand_path("foo", "bar")
+  p "="
+
+  p File.xpath("foo/../baz", "bar")
+  p File.expand_path("foo/../baz", "bar")
+  p "="
+
+  p File.xpath("../a", Dir.tmpdir)
+  p File.expand_path("../a", Dir.tmpdir)
 end
