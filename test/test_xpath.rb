@@ -151,10 +151,16 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal("C:/dir", File.xpath("C:/./dir"))
   end
 
-  test "does not modify its argument" do
-    str = "./a/b/../c"
-    assert_equal("#{@home}/a/c", File.xpath(str))
-    assert_equal("./a/b/../c", str)
+  #test "does not modify its argument" do
+  #  str = "./a/b/../c"
+  #  assert_equal("#{@home}/a/c", File.xpath(str, @home))
+  #  assert_equal("./a/b/../c", str)
+  #end
+
+  test "accepts objects that have a to_path method" do
+    klass = Class.new{ def to_path; "a/b/c"; end }
+    obj = klass.new
+    assert_equal("#{@pwd}/a/b/c", File.xpath(obj))
   end
 
   def teardown
