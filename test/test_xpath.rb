@@ -108,6 +108,7 @@ class Test_XPath < Test::Unit::TestCase
 
   test "converts a pathname to an absolute pathname using '~' as base" do
     assert_equal(@home, File.xpath('~'))
+    assert_equal("#{@home}/foo", File.xpath('~/foo'))
   end
 
   test "converts a pathname to an absolute pathname using '~' for UNC path" do
@@ -124,6 +125,36 @@ class Test_XPath < Test::Unit::TestCase
   test "raises ArgumentError when HOME is nil" do
     ENV['HOME'] = nil
     assert_raise(ArgumentError){ File.xpath('~') }
+  end
+
+  test "raises ArgumentError if HOME is relative" do
+    ENV['HOME'] = '.'
+    assert_raise(ArgumentError){ File.xpath('~') }
+  end
+
+  test "raises ArgumentError if relative user is provided" do
+    ENV['HOME'] = '.'
+    assert_raise(ArgumentError){ File.xpath('~anything') }
+  end
+
+  #test "raises an ArgumentError if any username is supplied" do
+  #  assert_raise(ArgumentError){ File.xpath('~anything') }
+  #end
+
+  test "raises a TypeError if not passed a string" do
+    assert_raise(TypeError){ File.xpath(1) }
+    assert_raise(TypeError){ File.xpath(nil) }
+    assert_raise(TypeError){ File.xpath(true) }
+  end
+
+  test "canonicalizes absolute path" do
+    assert_equal("C:/dir", File.xpath("C:/./dir"))
+  end
+
+  test "does not modify its argument" do
+    str = "./a/b/../c"
+    assert_equal("#{@home}/a/c", File.xpath(str))
+    assert_equal("./a/b/../c", str)
   end
 
   def teardown
