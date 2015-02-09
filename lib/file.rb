@@ -27,8 +27,8 @@ class File
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
         raise ArgumentError if PathIsRelative(ENV['HOME'])
-        #raise ArgumentError if path =~ /.*?\~\w+$/
-        path = path.sub('~', ENV['HOME'])
+        raise ArgumentError if path =~ /\A\~\w+$/
+        path = path.sub('~', ENV['HOME']) unless path =~ /\w+\~/i
       end
 
       if dir
@@ -89,4 +89,12 @@ if $0 == __FILE__
 
   p File.xpath("c:foo", "c:/bar")
   p File.expand_path("c:foo", "c:/bar")
+  p "="
+
+  p File.xpath('~')
+  p File.expand_path('~')
+  p "="
+
+  p File.xpath('foo~bar')
+  p File.expand_path('foo~bar')
 end
