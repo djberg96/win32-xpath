@@ -17,6 +17,8 @@ class File
     attach_function :PathCanonicalize, :PathCanonicalizeW, [:buffer_out, :buffer_in], :bool
 
     def xpath(path, dir=nil)
+      path = path.to_path if path.respond_to?(:to_path)
+
       raise TypeError unless path.is_a?(String)
 
       if dir
@@ -24,6 +26,7 @@ class File
       end
 
       return Dir.pwd if path.empty?
+
 
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
@@ -69,6 +72,5 @@ class File
 end
 
 if $0 == __FILE__
-  ENV['HOME'] = 'C:/'
-  p File.xpath("~")
+  p File.xpath("./a/b/../c")
 end
