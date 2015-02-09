@@ -24,9 +24,12 @@ class File
 
       raise TypeError unless path.is_a?(String)
 
+      path = path.tr("/", "\\")
+
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
-        raise ArgumentError if PathIsRelative(ENV['HOME'])
+        home = ENV['HOME'].tr("/", "\\")
+        raise ArgumentError if PathIsRelative(home)
         raise ArgumentError if path =~ /\A\~\w+$/
         path = path.sub('~', ENV['HOME']) unless path =~ /\w+\~/i
       end
@@ -49,7 +52,7 @@ class File
 
       npath = ptr.read_string
 
-      buf = (0.chr * 1024)
+      buf = 0.chr * 1024
 
       rv = GetFullPathName(npath, buf.size, buf, nil)
 
