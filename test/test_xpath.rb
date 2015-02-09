@@ -32,9 +32,9 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(File.join(@pwd, 'foo'), File.xpath('foo', nil))
   end
 
-  #test "converts 'foo' and 'bar' into absolute pathname" do
-  #  assert_equal(File.join(@pwd, "bar", "foo"), File.xpath('foo', 'bar'))
-  #end
+  test "converts 'foo' and 'bar' into absolute pathname" do
+    assert_equal(File.join(@pwd, "bar", "foo"), File.xpath('foo', 'bar'))
+  end
 
   test "converts a pathname into absolute pathname" do
     assert_equal(File.join(@pwd, 'a'), File.xpath('a.'))
@@ -71,23 +71,23 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(File.join(@root, 'a'), File.xpath("#{@root}a."))
   end
 
-  #test "removes trailing invalid ':$DATA' from absolute path" do
-  #  assert_equal(File.join(@root, 'aaa'), File.xpath("#{@root}/aaa::$DATA"))
-  #  assert_equal(File.join(@root, 'aa:a'), File.xpath("#{@root}/aa:a:$DATA"))
-  #  assert_equal(File.join(@root, 'aaa:$DATA'), File.xpath("#{@root}/aaa:$DATA"))
-  #end
+  test "removes trailing invalid ':$DATA' from absolute path" do
+    assert_equal(File.join(@root, 'aaa'), File.xpath("#{@root}/aaa::$DATA"))
+    assert_equal(File.join(@root, 'aa:a'), File.xpath("#{@root}/aa:a:$DATA"))
+    assert_equal(File.join(@root, 'aaa:$DATA'), File.xpath("#{@root}/aaa:$DATA"))
+  end
 
   test "converts a pathname with a drive letter but no slash" do
     assert_match(/\Ac:\//i, File.xpath("c:"))
   end
 
-  #test "converts a pathname with a drive letter ignoring different drive dir" do
-  #  assert_match(/\Ac:\//i, File.xpath("c:foo", "d:/bar"))
-  #end
+  test "converts a pathname with a drive letter ignoring different drive dir" do
+    assert_match(/\Ac:\//i, File.xpath("c:foo", "d:/bar"))
+  end
 
-  #test "converts a pathname with a drive letter using same drive dir" do
-  #  assert_match(/\Ac:\/bar\/foo\z/i, File.xpath("c:foo", "c:/bar"))
-  #end
+  test "converts a pathname with a drive letter using same drive dir" do
+    assert_match(/\Ac:\/bar\/foo\z/i, File.xpath("c:foo", "c:/bar"))
+  end
 
   test "converts a pathname which starts with a slash using current drive" do
     assert_match(/\A#{@drive}\/foo\z/i, File.xpath('/foo'))
@@ -101,8 +101,8 @@ class Test_XPath < Test::Unit::TestCase
     assert_true(File.xpath('/foo'.taint).tainted?)
     assert_true(File.xpath('C:/foo'.taint).tainted?)
 
-    #assert_false(File.xpath('C:/foo').tainted?)
-    #assert_false(File.xpath('//foo').tainted?)
+    assert_false(File.xpath('C:/foo').tainted?)
+    assert_false(File.xpath('//foo').tainted?)
   end
 
   test "converts a pathname to an absolute pathname using '~' as base" do
@@ -136,9 +136,9 @@ class Test_XPath < Test::Unit::TestCase
     assert_raise(ArgumentError){ File.xpath('~anything') }
   end
 
-  #test "raises an ArgumentError if any username is supplied" do
-  #  assert_raise(ArgumentError){ File.xpath('~anything') }
-  #end
+  test "raises an ArgumentError if any username is supplied" do
+    assert_raise(ArgumentError){ File.xpath('~anything') }
+  end
 
   test "raises a TypeError if not passed a string" do
     assert_raise(TypeError){ File.xpath(1) }
@@ -150,11 +150,11 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal("C:/dir", File.xpath("C:/./dir"))
   end
 
-  #test "does not modify its argument" do
-  #  str = "./a/b/../c"
-  #  assert_equal("#{@home}/a/c", File.xpath(str, @home))
-  #  assert_equal("./a/b/../c", str)
-  #end
+  test "does not modify its argument" do
+    str = "./a/b/../c"
+    assert_equal("#{@home}/a/c", File.xpath(str, @home))
+    assert_equal("./a/b/../c", str)
+  end
 
   test "accepts objects that have a to_path method" do
     klass = Class.new{ def to_path; "a/b/c"; end }
