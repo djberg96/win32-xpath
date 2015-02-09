@@ -9,15 +9,15 @@ class File
     FILE_ATTRIBUTE_DIRECTORY = 0x00000010
 
     ffi_lib :kernel32
-    attach_function :GetFullPathName, :GetFullPathNameW, [:buffer_in, :dword, :pointer, :pointer], :dword
+    attach_function :GetFullPathName, :GetFullPathNameA, [:string, :dword, :pointer, :pointer], :dword
 
     ffi_lib :shlwapi
-    attach_function :PathAppend, :PathAppendW, [:buffer_out, :buffer_in], :bool
-    attach_function :PathIsRoot, :PathIsRootW, [:buffer_in], :bool
-    attach_function :PathIsRelative, :PathIsRelativeW, [:buffer_in], :bool
-    attach_function :PathRemoveBackslash, :PathRemoveBackslashW, [:pointer], :string
-    attach_function :PathCanonicalize, :PathCanonicalizeW, [:buffer_out, :buffer_in], :bool
-    attach_function :PathRelativePathTo, :PathRelativePathToW, [:buffer_out, :buffer_in, :dword, :buffer_in, :dword], :bool
+    attach_function :PathAppend, :PathAppendA, [:buffer_out, :string], :bool
+    attach_function :PathIsRoot, :PathIsRootA, [:string], :bool
+    attach_function :PathIsRelative, :PathIsRelativeA, [:string], :bool
+    attach_function :PathRemoveBackslash, :PathRemoveBackslashA, [:pointer], :string
+    attach_function :PathCanonicalize, :PathCanonicalizeA, [:buffer_out, :string], :bool
+    attach_function :PathRelativePathTo, :PathRelativePathToA, [:buffer_out, :string, :dword, :string, :dword], :bool
 
     def xpath(path, dir=nil)
       path = path.to_path if path.respond_to?(:to_path)
@@ -26,38 +26,35 @@ class File
 
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
-        home = (ENV['HOME'] + 0.chr).tr('/', '\\').encode(WCHAR)
-        raise ArgumentError if PathIsRelative(home)
+        raise ArgumentError if PathIsRelative(ENV['HOME'])
+        #raise ArgumentError if path =~ /.*?\~\w+$/
         path = path.sub('~', ENV['HOME'])
       end
-
-      npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
 
       if dir
         raise TypeError unless dir.is_a?(String)
         return dir if path.empty?
-        if PathIsRelative(npath)
+        if PathIsRelative(path)
           path = File.join(dir, path)
-          npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
         end
       else
         return Dir.pwd if path.empty?
       end
 
-      ptr = FFI::MemoryPointer.from_string(npath)
+      ptr = FFI::MemoryPointer.from_string(path)
 
       while temp = PathRemoveBackslash(ptr)
         break unless temp.empty?
       end
 
-      npath = ptr.read_bytes(npath.size * 2)
+      npath = ptr.read_string
 
-      buf = (0.chr * 1024).encode(WCHAR)
+      buf = (0.chr * 1024)
 
       rv = GetFullPathName(npath, buf.size, buf, nil)
 
       if rv > buf.size
-        npath = (0.chr * rv).encode(WCHAR)
+        npath = 0.chr * rv
         rv = GetFullPathName(npath, buf.size, buf, nil)
       end
 
@@ -65,7 +62,7 @@ class File
         raise SystemCallError.new('GetFullPathName', FFI.errno)
       end
 
-      result = buf.strip.encode('UTF-8').tr('\\', '/')
+      result = buf.strip.tr('\\', '/')
 
       result.taint
     end
@@ -74,8 +71,6 @@ end
 
 if $0 == __FILE__
   require 'tmpdir'
-  p File.xpath("c:foo", "c:/bar")
-=begin
   p File.xpath("foo", "C:/bar")
   p File.expand_path("foo", "C:/bar")
   p "="
@@ -90,5 +85,8 @@ if $0 == __FILE__
 
   p File.xpath("../a", Dir.tmpdir)
   p File.expand_path("../a", Dir.tmpdir)
-=end
+  p "="
+
+  p File.xpath("c:foo", "c:/bar")
+  p File.expand_path("c:foo", "c:/bar")
 end
