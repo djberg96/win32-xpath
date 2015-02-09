@@ -12,6 +12,7 @@ class File
     attach_function :GetFullPathName, :GetFullPathNameW, [:buffer_in, :dword, :pointer, :pointer], :dword
 
     ffi_lib :shlwapi
+    attach_function :PathAppend, :PathAppendW, [:buffer_out, :buffer_in], :bool
     attach_function :PathIsRoot, :PathIsRootW, [:buffer_in], :bool
     attach_function :PathIsRelative, :PathIsRelativeW, [:buffer_in], :bool
     attach_function :PathRemoveBackslash, :PathRemoveBackslashW, [:pointer], :string
@@ -23,18 +24,6 @@ class File
 
       raise TypeError unless path.is_a?(String)
 
-      if dir
-        raise TypeError unless dir.is_a?(String)
-
-        ndir = (dir + 0.chr).tr("/", "\\").encode(WCHAR)
-
-        #unless PathIsRoot(ndir)
-          path = File.join(dir,path) # Will be normalized automatically later
-        #end
-      end
-
-      return Dir.pwd if path.empty?
-
       if path.include?('~')
         raise ArgumentError unless ENV['HOME']
         home = (ENV['HOME'] + 0.chr).tr('/', '\\').encode(WCHAR)
@@ -43,6 +32,17 @@ class File
       end
 
       npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
+
+      if dir
+        raise TypeError unless dir.is_a?(String)
+        return dir if path.empty?
+        if PathIsRelative(npath)
+          path = File.join(dir, path)
+          npath = (path + 0.chr).tr('/', '\\').encode(WCHAR)
+        end
+      else
+        return Dir.pwd if path.empty?
+      end
 
       ptr = FFI::MemoryPointer.from_string(npath)
 
@@ -74,6 +74,8 @@ end
 
 if $0 == __FILE__
   require 'tmpdir'
+  p File.xpath("c:foo", "c:/bar")
+=begin
   p File.xpath("foo", "C:/bar")
   p File.expand_path("foo", "C:/bar")
   p "="
@@ -88,4 +90,5 @@ if $0 == __FILE__
 
   p File.xpath("../a", Dir.tmpdir)
   p File.expand_path("../a", Dir.tmpdir)
+=end
 end
