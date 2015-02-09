@@ -47,17 +47,16 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(File.join(@pwd, 'a'), File.xpath('a..'))
   end
 
-  #test "converts a pathname to an absolute pathname using a complete path" do
-  #  assert_equal(@tmp, File.xpath('', @tmp))
-  #  assert_equal(File.join(@tmp, 'a'), File.xpath('a', @tmp))
-  #  assert_equal(File.join(@tmp, 'a'), File.xpath('../a', @tmp))
-  #  assert_equal(File.join(@tmp, 'a'), File.xpath('../a', "#{@tmp}/xxx"))
-  #  assert_equal(@root, File.xpath('.', @root))
-  #end
+  test "converts a pathname to an absolute pathname using a complete path" do
+    assert_equal(@tmp, File.xpath('', @tmp))
+    assert_equal(File.join(@tmp, 'a'), File.xpath('a', @tmp))
+    assert_equal(File.join(@tmp, 'a'), File.xpath('../a', "#{@tmp}/xxx"))
+    assert_equal(@root, File.xpath('.', @root))
+  end
 
-  #test "ignores supplied dir if path contains a drive letter" do
-  #  assert_equal(@root, File.xpath(@root, "D:/"))
-  #end
+  test "ignores supplied dir if path contains a drive letter" do
+    assert_equal(@root, File.xpath(@root, "D:/"))
+  end
 
   test "removes trailing slashes from absolute path" do
     assert_equal(File.join(@root, 'foo'), File.xpath("#{@root}foo/"))
