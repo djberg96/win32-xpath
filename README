@@ -11,7 +11,7 @@
   - Drive-current handling
   - The '~' handling
 
-= Specifics On Tilde Handling
+= Specifics On Tilde Handling on Windows
   - A '~' by itself is expanded to ENV['HOME'].
   - If the '~' is immediately followed by any non-path separator character
     results in an ArgumentError.
@@ -26,3 +26,18 @@
   Unix, because it's SHELL behavior, not something the OS impelements. I realize
   the core developers were trying to be helpful, but here it's just a pain due
   to parsing.
+
+= Specifics on $DATA Handling On Windows
+  - Specifically parses out and ignores "::$DATA" IO stream if found.
+  - Does not handle other mistakes in the io stream name.
+  - All other IO streams are treated literally.
+
+  In other words, it will ignore "::$DATA" but retain ":$DATA".
+
+  Personal thoughts: This is very peculiar. Why is this logic even in here?
+  Since when is Ruby in the business of autocorrecting paths? I can only guess
+  this was shoehorned in because some core developer got burned by a bad path
+  in some form data that delivered a virus onto his system, which seems to be
+  the primary usage of alt streams on Windows. But then why only handle the
+  default data stream and not others? Anyway, it's crap, and I have no 
+  intention of supporting this.
