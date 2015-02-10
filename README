@@ -14,7 +14,7 @@
 = Specifics On Tilde Handling on Windows
   - A '~' by itself is expanded to ENV['HOME'].
   - If the '~' is immediately followed by any non-path separator character
-    results in an ArgumentError.
+    then it results in an ArgumentError.
   - If the '~' is preceded by any character, it is treated literally.
   - Any attempt to interpolate '~' if ENV['HOME'] isn't set will result in
     an ArgumentError.
@@ -23,7 +23,7 @@
   expansion. This could be made to work, though with some difficulty.
 
   Personal thoughts: I've never liked tilde expansion in this method, even on
-  Unix, because it's SHELL behavior, not something the OS impelements. I realize
+  Unix, because it's SHELL behavior, not something the OS implements. I realize
   the core developers were trying to be helpful, but here it's just a pain due
   to parsing.
 
