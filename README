@@ -6,6 +6,7 @@
   working and passing all tests, I will convert it to a C extension.
 
 = Things Making It Difficult
-  * The taint rules
-  * The $DATA handling
-  * Drive-current handling
+  - The taint rules
+  - The $DATA handling
+  - Drive-current handling
+  - The '~' handling
