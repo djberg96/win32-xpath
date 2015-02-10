@@ -4,3 +4,8 @@
 = The Plan
   The initial implementation will use FFI as a prototype. Once that is
   working and passing all tests, I will convert it to a C extension.
+
+= Things Making It Difficult
+  * The taint rules
+  * The $DATA handling
+  * Drive-current handling
