@@ -37,7 +37,35 @@
   Personal thoughts: This is very peculiar. Why is this logic even in here?
   Since when is Ruby in the business of autocorrecting paths? I can only guess
   this was shoehorned in because some core developer got burned by a bad path
-  in some form data that delivered a virus onto his system, which seems to be
+  from some form data that delivered a virus onto his system, which seems to be
   the primary usage of alt streams on Windows. But then why only handle the
   default data stream and not others? Anyway, it's crap, and I have no 
   intention of supporting this.
+
+= Specifics On Drive-Current Handling.
+
+  Drive-current paths, e.g. "C:foo" are basically a relic of DOS 1.0. You can
+  read all about them at:
+
+  http://blogs.msdn.com/b/oldnewthing/archive/2010/10/11/10073890.aspx
+
+  There's good news and bad news here. The good news is that GetFullPathName
+  will treat it as a relative path, and return the result you expect. The bad
+  news is that the PathIsRelative function does NOT consider a path like
+  C:foo to be relative, and this creates some problems. In practice, this only
+  matters in cases where a user specifies both a drive-current path as the
+  first argument as well as a dir path for the second argument.
+
+  This is probably a combination that you will never see in the wild, and I'm
+  not sure that particular edge case is worth worrying about. To deal with it
+  will require some hand parsing, though. Ick.
+
+= Specifics On Taint Checking
+
+  MRI returns a tainted string, unless the original path is unmodified. In
+  practice, that means any absolute path is returned untainted (assuming it
+  was untainted originally), while everything else returns a tainted string.
+
+  The trick is when you have an absolute path with trailing slashes. Since
+  MRI strips them off, you have to deal with that separately. That means some
+  sort of state tracking. While not horrible, it is a nuisance.
