@@ -14,11 +14,15 @@ class File
     attach_function :PathStripPath, :PathStripPathA, [:pointer], :void
 
     def xpath(path, dir=nil)
-      tpath = path.to_path if path.respond_to?(:to_path)
+      if path.respond_to?(:to_path)
+        tpath = path.to_path
+      else
+        tpath = path.dup
+      end
 
-      raise TypeError unless path.is_a?(String)
+      raise TypeError unless tpath.is_a?(String)
 
-      tpath = path.tr("/", "\\")
+      tpath.tr!("/", "\\")
 
       if tpath.include?('~')
         raise ArgumentError unless ENV['HOME']
@@ -32,7 +36,7 @@ class File
         raise TypeError unless dir.is_a?(String)
         return dir if tpath.empty?
 
-        if PathIsRelative(tpath)
+        if PathIsRelative(tpath) #|| tpath =~ /\A\w:\w/i
           tpath = File.join(dir, tpath)
         end
       else
