@@ -93,14 +93,12 @@ class Test_XPath < Test::Unit::TestCase
     assert_match(/\A#{@drive}\/foo\z/i, File.xpath('/foo'))
   end
 
-  # These taint rules are STOOOPID
   test "returns tainted strings or not" do
     assert_true(File.xpath('foo').tainted?)
     assert_true(File.xpath('foo'.taint).tainted?)
     assert_true(File.xpath('/foo').tainted?)
     assert_true(File.xpath('/foo'.taint).tainted?)
     assert_true(File.xpath('C:/foo'.taint).tainted?)
-
     assert_false(File.xpath('C:/foo').tainted?)
     assert_false(File.xpath('//foo').tainted?)
   end
