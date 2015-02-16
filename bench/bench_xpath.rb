@@ -21,7 +21,7 @@ Benchmark.bm(30) do |x|
 
 ##############################################
 
-  x.report("expand_path('foo/bar')") do
+  x.report("xpath('foo/bar')") do
     str = "foo/bar"
     MAX.times{ File.xpath(str) }
   end
