@@ -14,32 +14,32 @@ class File
     attach_function :PathStripPath, :PathStripPathA, [:pointer], :void
 
     def xpath(path, dir=nil)
-      path = path.to_path if path.respond_to?(:to_path)
+      tpath = path.to_path if path.respond_to?(:to_path)
 
       raise TypeError unless path.is_a?(String)
 
-      path = path.tr("/", "\\")
+      tpath = path.tr("/", "\\")
 
-      if path.include?('~')
+      if tpath.include?('~')
         raise ArgumentError unless ENV['HOME']
         home = ENV['HOME'].tr("/", "\\")
         raise ArgumentError if PathIsRelative(home)
-        raise ArgumentError if path =~ /\A\~\w+$/
-        path = path.sub('~', ENV['HOME']) unless path =~ /\w+\~/i
+        raise ArgumentError if tpath =~ /\A\~\w+$/
+        tpath = tpath.sub('~', ENV['HOME']) unless tpath =~ /\w+\~/i
       end
 
       if dir
         raise TypeError unless dir.is_a?(String)
-        return dir if path.empty?
+        return dir if tpath.empty?
 
-        if PathIsRelative(path)
-          path = File.join(dir, path)
+        if PathIsRelative(tpath)
+          tpath = File.join(dir, tpath)
         end
       else
-        return Dir.pwd if path.empty?
+        return Dir.pwd if tpath.empty?
       end
 
-      ptr = FFI::MemoryPointer.from_string(path)
+      ptr = FFI::MemoryPointer.from_string(tpath)
 
       while temp = PathRemoveBackslash(ptr)
         break unless temp.empty?
@@ -62,7 +62,11 @@ class File
 
       result = buf.strip.tr('\\', '/')
 
-      result.taint
+      if result != path || path.tainted?
+        result.taint
+      end
+
+      result
     end
   end
 end
@@ -71,6 +75,14 @@ if $0 == __FILE__
   require 'tmpdir'
   p File.xpath("foo", "C:/bar")
   p File.expand_path("foo", "C:/bar")
+  p "="
+
+  p File.xpath("foo", "C:/bar///")
+  p File.expand_path("foo", "C:/bar///")
+  p "="
+
+  p File.xpath("foo", "C://foo///bar//")
+  p File.expand_path("foo", "C://foo///bar//")
   p "="
 
   p File.xpath("foo", "bar")
@@ -95,4 +107,9 @@ if $0 == __FILE__
 
   p File.xpath('foo~bar')
   p File.expand_path('foo~bar')
+  p "="
+
+  p File.xpath('~/bar')
+  p File.expand_path('~/bar')
+  p "="
 end
