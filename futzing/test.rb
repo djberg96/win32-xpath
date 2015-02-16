@@ -10,12 +10,19 @@ class Windows
   attach_function :PathStripToRootA, [:pointer], :bool
   attach_function :PathIsRelativeA, [:string], :bool
   attach_function :PathAppendA, [:buffer_out, :string], :bool
+  attach_function :PathSkipRootA, [:string], :string
+  attach_function :PathIsNetworkPathA, [:string], :bool
 
   ffi_lib :kernel32
   attach_function :GetFullPathNameA, [:string, :dword, :buffer_out, :pointer], :dword
 
   def xpath(path)
     path = path.tr("/", "\\")
+
+    p PathIsNetworkPathA(path)
+    p PathSkipRootA(path)
+
+=begin
     buf = 0.chr * 1024
 
     if GetFullPathNameA(path, buf.size, buf, nil) == 0
@@ -23,6 +30,7 @@ class Windows
     end
 
     p buf.strip
+=end
 
 =begin
     ptr = FFI::MemoryPointer.from_string(path)
@@ -50,5 +58,6 @@ if $0 == __FILE__
   #p Windows.new.xpath("C:/foo/../bar")
   #p Windows.new.xpath("C:foo")
   Windows.new.xpath("C:foo")
+  Windows.new.xpath("C:/foo")
   #Windows.new.xpath("foo")
 end
