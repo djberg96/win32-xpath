@@ -22,8 +22,21 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
   v_path = rb_funcall(v_path, rb_intern("tr"), 2, rb_str_new2("/"), rb_str_new2("\\"));
+  path   = StringValuePtr(v_path);
 
-  path = StringValuePtr(v_path);
+  if (!NIL_P(v_dir)){
+    if (!strlen(path))
+      return v_dir;
+
+    if (PathIsRelative(path)){
+      v_path = rb_funcall(rb_cFile, rb_intern("join"), 2, v_dir, v_path);  
+      path = StringValuePtr(v_path);
+    }
+  }
+  else{
+    if (!strlen(path))
+      return rb_funcall(rb_cDir, rb_intern("pwd"), 0, NULL);
+  }
 
   // Strip all trailing backslashes
   while (!*PathRemoveBackslash(path));
@@ -45,6 +58,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     rb_sys_fail("GetFullPathName");
 
   v_path = rb_str_new2(buffer);
+  v_path = rb_funcall(v_path, rb_intern("tr"), 2, rb_str_new2("\\"), rb_str_new2("/"));
   free(buffer);
 
   OBJ_TAINT(v_path);
