@@ -34,8 +34,29 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    if (!strlen(path))
-      return rb_funcall(rb_cDir, rb_intern("pwd"), 0, NULL);
+    if (!strlen(path)){
+      char* pwd = NULL;
+      VALUE v_pwd;
+
+      pwd = (char*)malloc(BUFSIZE);
+      length = GetCurrentDirectory(BUFSIZE, pwd);
+
+      if (length > BUFSIZE){
+        pwd = (char*)realloc(pwd, length);
+
+        if (!pwd)
+          rb_sys_fail("realloc");
+
+        length = GetCurrentDirectory(BUFSIZE, pwd);
+      }
+
+      if (!length)
+        rb_sys_fail("GetCurrentDirectory");
+
+      v_pwd = rb_str_new2(pwd);
+      free(pwd);
+      return v_pwd;
+    }
   }
 
   // Strip all trailing backslashes
