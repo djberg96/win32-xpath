@@ -36,7 +36,7 @@ class File
         raise TypeError unless dir.is_a?(String)
         return dir if tpath.empty?
 
-        if PathIsRelative(tpath) #|| tpath =~ /\A\w:\w/i
+        if PathIsRelative(tpath)
           tpath = File.join(dir, tpath)
         end
       else
