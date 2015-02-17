@@ -67,19 +67,16 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       char* pwd = NULL;
       VALUE v_pwd;
 
-      pwd = (char*)malloc(BUFSIZE);
-      length = GetCurrentDirectory(BUFSIZE, pwd);
+      // First call, get the length
+      length = GetCurrentDirectory(0, NULL);
+      pwd = (char*)malloc(length);
 
-      if (length > BUFSIZE){
-        pwd = (char*)realloc(pwd, length);
+      if (!pwd)
+        rb_sys_fail("malloc");
 
-        if (!pwd)
-          rb_sys_fail("realloc");
+      length = GetCurrentDirectory(length, pwd);
 
-        length = GetCurrentDirectory(BUFSIZE, pwd);
-      }
-
-      if (!length)
+      if(!length)
         rb_sys_fail("GetCurrentDirectory");
 
       v_pwd = rb_funcall(rb_str_new2(pwd), rb_intern("tr"), 2, rb_str_new2("\\"), rb_str_new2("/"));
@@ -96,7 +93,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   buffer = (char*)malloc(length);
 
   if (!buffer)
-    rb_sys_fail("realloc");
+    rb_sys_fail("malloc");
 
   // Now get the path
   length = GetFullPathName(path, length, buffer, NULL);
