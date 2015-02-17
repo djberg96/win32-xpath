@@ -18,9 +18,18 @@ class Windows
 
   def xpath(path)
     path = path.tr("/", "\\")
+    regex = /\A(\w):([^\\]+)(.*)/i
 
-    p PathIsNetworkPathA(path)
-    p PathSkipRootA(path)
+    if m = regex.match(path)
+      drive = m.captures[0]
+      path = m.captures[1..-1].join
+      p drive
+      p path
+    end
+
+    #p PathIsNetworkPathA(path)
+    #p PathSkipRootA(path)
+    #p PathIsRelativeA(path)
 
 =begin
     buf = 0.chr * 1024
@@ -58,6 +67,7 @@ if $0 == __FILE__
   #p Windows.new.xpath("C:/foo/../bar")
   #p Windows.new.xpath("C:foo")
   Windows.new.xpath("C:foo")
+  Windows.new.xpath("C:foo/bar")
   Windows.new.xpath("C:/foo")
   #Windows.new.xpath("foo")
 end
