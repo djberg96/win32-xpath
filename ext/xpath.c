@@ -6,8 +6,8 @@
 
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_dir;
-  char* path;
-  char buffer[BUFSIZE] = "";
+  char* path = NULL;
+  char* buffer = NULL;
   int length;
 
   rb_scan_args(argc, argv, "11", &v_path, &v_dir);
@@ -26,17 +26,24 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   while (!*PathRemoveBackslash(path));
 
+  buffer = (char*)malloc(BUFSIZE);
   length = GetFullPathName(path, BUFSIZE, buffer, NULL);
 
+  // If buffer is too small, try again
   if (length > sizeof(buffer)){
-    realloc(buffer, length);
-    length = GetFullPathName(path, sizeof(buffer), buffer, NULL);
+    buffer = (char*)realloc(buffer, length);
+
+    if (!buffer)
+      rb_sys_fail("realloc");
+
+    length = GetFullPathName(path, length, buffer, NULL);
   }
 
   if (!length)
     rb_sys_fail("GetFullPathName");
 
   v_path = rb_str_new2(buffer);
+  free(buffer);
 
   return v_path;
 }
