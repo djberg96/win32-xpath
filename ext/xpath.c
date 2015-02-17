@@ -43,12 +43,14 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     if (PathIsRelative(home))
       rb_raise(rb_eArgError, "non-absolute home");
 
-    if (ptr[1] != '\\'){
+    if (ptr[1] && ptr[1] != '\\'){
       ptr[strcspn(ptr, "\\")] = 0; // Only read up to slash
       ptr++; // Skip '~'
       rb_raise(rb_eArgError, "can't find user %s", ptr);
     }
 
+    v_path = rb_funcall(v_path, rb_intern("sub"), 2, rb_str_new2("~"), v_home);
+    path = StringValuePtr(v_path);
   }
 
   if (!NIL_P(v_dir)){
@@ -89,23 +91,20 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   // Strip all trailing backslashes
   while (!*PathRemoveBackslash(path));
 
-  buffer = (char*)malloc(BUFSIZE);
-  length = GetFullPathName(path, BUFSIZE, buffer, NULL);
+  // First call, get the length
+  length = GetFullPathName(path, 0, buffer, NULL);
+  buffer = (char*)malloc(length);
 
-  // If buffer is too small, try again
-  if (length > sizeof(buffer)){
-    buffer = (char*)realloc(buffer, length);
+  if (!buffer)
+    rb_sys_fail("realloc");
 
-    if (!buffer)
-      rb_sys_fail("realloc");
-
-    length = GetFullPathName(path, length, buffer, NULL);
-  }
+  // Now get the path
+  length = GetFullPathName(path, length, buffer, NULL);
 
   if (!length)
     rb_sys_fail("GetFullPathName");
 
-  v_path = rb_str_new2(buffer);
+  v_path = rb_str_new(buffer, length);
   v_path = rb_funcall(v_path, rb_intern("tr"), 2, rb_str_new2("\\"), rb_str_new2("/"));
   free(buffer);
 
