@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <shlwapi.h>
 
-#define BUFSIZE 4096
+#define BUFSIZE 1024
 
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_dir;
@@ -15,15 +15,17 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   if (rb_respond_to(v_path, rb_intern("to_path")))
     v_path = rb_funcall(v_path, rb_intern("to_path"), 0, NULL);
 
-  Check_Type(v_path, T_STRING);
+  SafeStringValue(v_path);
 
   if (!NIL_P(v_dir))
-    Check_Type(v_dir, T_STRING);
+    SafeStringValue(v_dir);
 
+  // Convert all forward slashes to backslashes to Windows API functions work properly
   v_path = rb_funcall(v_path, rb_intern("tr"), 2, rb_str_new2("/"), rb_str_new2("\\"));
 
   path = StringValuePtr(v_path);
 
+  // Strip all trailing backslashes
   while (!*PathRemoveBackslash(path));
 
   buffer = (char*)malloc(BUFSIZE);
@@ -44,6 +46,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   v_path = rb_str_new2(buffer);
   free(buffer);
+
+  OBJ_TAINT(v_path);
 
   return v_path;
 }
