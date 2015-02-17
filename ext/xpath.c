@@ -45,8 +45,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     if (ptr[1] && ptr[1] != '\\'){
       ptr[strcspn(ptr, "\\")] = 0; // Only read up to slash
-      ptr++; // Skip '~'
-      rb_raise(rb_eArgError, "can't find user %s", ptr);
+      rb_raise(rb_eArgError, "can't find user %s", ++ptr);
     }
 
     v_path = rb_funcall(v_path, rb_intern("sub"), 2, rb_str_new2("~"), v_home);
