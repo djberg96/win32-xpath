@@ -2,9 +2,13 @@
 #include <windows.h>
 #include <shlwapi.h>
 
+#define BUFSIZE 4096
+
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_dir;
-  TCHAR* path;
+  char* path;
+  char buffer[BUFSIZE] = "";
+  int length;
 
   rb_scan_args(argc, argv, "11", &v_path, &v_dir);
 
@@ -22,9 +26,19 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   while (!*PathRemoveBackslash(path));
 
-  printf("Path is: %s\n", path);
+  length = GetFullPathName(path, BUFSIZE, buffer, NULL);
 
-  return self;
+  if (length > sizeof(buffer)){
+    realloc(buffer, length);
+    length = GetFullPathName(path, sizeof(buffer), buffer, NULL);
+  }
+
+  if (!length)
+    rb_sys_fail("GetFullPathName");
+
+  v_path = rb_str_new2(buffer);
+
+  return v_path;
 }
 
 void Init_xpath(){
