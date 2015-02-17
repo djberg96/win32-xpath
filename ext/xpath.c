@@ -9,6 +9,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   char* path = NULL;
   char* buffer = NULL;
   int length;
+  char* ptr;
 
   rb_scan_args(argc, argv, "11", &v_path, &v_dir);
 
@@ -23,6 +24,32 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   // Convert all forward slashes to backslashes to Windows API functions work properly
   v_path = rb_funcall(v_path, rb_intern("tr"), 2, rb_str_new2("/"), rb_str_new2("\\"));
   path   = StringValuePtr(v_path);
+
+  // Handle ~ expansion
+  if (ptr = strchr(path, '~')){
+    VALUE v_home, v_regex, v_regex_str, v_capture;
+
+    char* home = getenv("HOME");
+
+    if (!home)
+      home = getenv("USERPROFILE");
+
+    if(!home)
+      rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+
+    v_home = rb_funcall(rb_str_new2(home), rb_intern("tr"), 2, rb_str_new2("/"), rb_str_new2("\\"));
+    home = StringValuePtr(v_home);
+
+    if (PathIsRelative(home))
+      rb_raise(rb_eArgError, "non-absolute home");
+
+    if (ptr[1] != '\\'){
+      ptr[strcspn(ptr, "\\")] = 0; // Only read up to slash
+      ptr++; // Skip '~'
+      rb_raise(rb_eArgError, "can't find user %s", ptr);
+    }
+
+  }
 
   if (!NIL_P(v_dir)){
     if (!strlen(path))
@@ -53,7 +80,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       if (!length)
         rb_sys_fail("GetCurrentDirectory");
 
-      v_pwd = rb_str_new2(pwd);
+      v_pwd = rb_funcall(rb_str_new2(pwd), rb_intern("tr"), 2, rb_str_new2("\\"), rb_str_new2("/"));
       free(pwd);
       return v_pwd;
     }
