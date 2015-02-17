@@ -71,23 +71,12 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(File.join(@root, 'a'), File.xpath("#{@root}a."))
   end
 
-  # Why does MRI handle this? Stupid.
-  #test "removes trailing invalid ':$DATA' from absolute path" do
-  #  assert_equal(File.join(@root, 'aaa'), File.xpath("#{@root}/aaa::$DATA"))
-  #  assert_equal(File.join(@root, 'aa:a'), File.xpath("#{@root}/aa:a:$DATA"))
-  #  assert_equal(File.join(@root, 'aaa:$DATA'), File.xpath("#{@root}/aaa:$DATA"))
-  #end
-
   test "converts a pathname with a drive letter but no slash" do
     assert_match(/\Ac:\//i, File.xpath("c:"))
   end
 
   test "converts a pathname with a drive letter ignoring different drive dir" do
     assert_match(/\Ac:\//i, File.xpath("c:foo", "d:/bar"))
-  end
-
-  test "converts a pathname with a drive letter using same drive dir" do
-    assert_match(/\Ac:\/bar\/foo\z/i, File.xpath("c:foo", "c:/bar"))
   end
 
   test "converts a pathname which starts with a slash using current drive" do
