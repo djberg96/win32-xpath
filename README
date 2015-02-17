@@ -56,9 +56,20 @@
   matters in cases where a user specifies both a drive-current path as the
   first argument as well as a dir path for the second argument.
 
-  This is probably a combination that you will never see in the wild, and I'm
-  not sure that particular edge case is worth worrying about. To deal with it
-  will require some hand parsing, though. Ick.
+  Personal thoughts: I think I can safely say that no one has ever used a
+  drive-current path in the second form because of this bug:
+
+  https://bugs.ruby-lang.org/issues/10858
+
+  That bug has existed since 1.9.0, which was released in 2007. If no one
+  noticed that for 8 years, then no one is using it. Given the relative pain
+  to parse out drive letters, I've chosen to ignore it. In addition, MRI isn't
+  even consistent, as it will treat the second argument as a relative path if
+  the drives are the same, but a root path is the drive letters are different.
+  Anyway, my code treats a drive-current path in the first form as a
+  relative path, which is consistent with MRI, and languages like Python. So
+  in the unlikely event you're using drive-current paths with this method, it
+  will still work as expected.
 
 = Specifics On Taint Checking
 
