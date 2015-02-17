@@ -1,6 +1,6 @@
 require 'test-unit'
 require 'tmpdir'
-require 'file'
+require 'xpath'
 
 class Test_XPath < Test::Unit::TestCase
   def self.startup
@@ -111,6 +111,7 @@ class Test_XPath < Test::Unit::TestCase
 
   test "raises ArgumentError when HOME is nil" do
     ENV['HOME'] = nil
+    ENV['USERPROFILE'] = nil
     assert_raise(ArgumentError){ File.xpath('~') }
   end
 
