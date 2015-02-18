@@ -19,8 +19,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   if (!NIL_P(v_dir_orig))
     SafeStringValue(v_dir_orig);
 
-  // Dup it so I can mangle it later
   v_path = rb_str_dup(v_path_orig);
+  rb_str_modify(v_path);
   path = StringValuePtr(v_path);
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
@@ -59,10 +59,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     if (!strlen(path))
       return v_dir_orig;
 
-    // TODO: Somehow receiver is being modified.
     if (PathIsRelative(path)){
+      char* dir;
       VALUE v_dir = rb_str_dup(v_dir_orig);
-      char* dir = StringValuePtr(v_dir);
+
+      rb_str_modify(v_dir);
+      dir = StringValuePtr(v_dir);
 
       while(strstr(dir, "/"))
         dir[strcspn(dir, "/")] = '\\';
