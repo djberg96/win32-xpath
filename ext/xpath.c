@@ -59,8 +59,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       return v_dir;
 
     if (PathIsRelative(path)){
-      v_path = rb_funcall(rb_cFile, rb_intern("join"), 2, v_dir, v_path);  
-      path = StringValuePtr(v_path);
+      char* dir = StringValuePtr(v_dir);
+
+      if(!PathAppend(dir, path))
+        rb_sys_fail("PathAppend");
+
+      path = dir;
     }
   }
   else{
