@@ -3,22 +3,24 @@
 #include <shlwapi.h>
 
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
-  VALUE v_path, v_dir;
+  VALUE v_path, v_path_orig, v_dir;
   char* path = NULL;
   char* buffer = NULL;
-  int length;
   char* ptr;
+  int length;
 
-  rb_scan_args(argc, argv, "11", &v_path, &v_dir);
+  rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir);
 
-  if (rb_respond_to(v_path, rb_intern("to_path")))
-    v_path = rb_funcall(v_path, rb_intern("to_path"), 0, NULL);
+  if (rb_respond_to(v_path_orig, rb_intern("to_path")))
+    v_path_orig = rb_funcall(v_path_orig, rb_intern("to_path"), 0, NULL);
 
-  SafeStringValue(v_path);
+  SafeStringValue(v_path_orig);
 
   if (!NIL_P(v_dir))
     SafeStringValue(v_dir);
 
+  // Dup it so I can mangle it later
+  v_path = rb_str_dup(v_path_orig);
   path = StringValuePtr(v_path);
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
@@ -105,7 +107,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   v_path = rb_str_new(buffer, length);
 
-  OBJ_TAINT(v_path);
+  if (OBJ_TAINTED(v_path_orig) || rb_equal(v_path, v_path_orig) == Qfalse)
+    OBJ_TAINT(v_path);
 
   return v_path;
 }
