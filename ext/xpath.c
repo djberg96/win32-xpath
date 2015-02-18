@@ -3,21 +3,21 @@
 #include <shlwapi.h>
 
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
-  VALUE v_path, v_path_orig, v_dir;
+  VALUE v_path, v_path_orig, v_dir_orig;
   char* path = NULL;
   char* buffer = NULL;
   char* ptr;
   int length;
 
-  rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir);
+  rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
 
   if (rb_respond_to(v_path_orig, rb_intern("to_path")))
     v_path_orig = rb_funcall(v_path_orig, rb_intern("to_path"), 0, NULL);
 
   SafeStringValue(v_path_orig);
 
-  if (!NIL_P(v_dir))
-    SafeStringValue(v_dir);
+  if (!NIL_P(v_dir_orig))
+    SafeStringValue(v_dir_orig);
 
   // Dup it so I can mangle it later
   v_path = rb_str_dup(v_path_orig);
@@ -54,15 +54,25 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     path = home;
   }
 
-  if (!NIL_P(v_dir)){
+  // Directory argument is present
+  if (!NIL_P(v_dir_orig)){
     if (!strlen(path))
-      return v_dir;
+      return v_dir_orig;
 
+    // TODO: Somehow receiver is being modified.
     if (PathIsRelative(path)){
+      VALUE v_dir = rb_str_dup(v_dir_orig);
       char* dir = StringValuePtr(v_dir);
+
+      while(strstr(dir, "/"))
+        dir[strcspn(dir, "/")] = '\\';
 
       if(!PathAppend(dir, path))
         rb_sys_fail("PathAppend");
+
+      // Remove leading slashes from relative paths
+      if (dir[0] == '\\')
+        ++dir;
 
       path = dir;
     }
