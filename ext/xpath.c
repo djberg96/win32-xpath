@@ -27,8 +27,6 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Handle ~ expansion
   if (ptr = strchr(path, '~')){
-    VALUE v_home, v_regex, v_regex_str, v_capture;
-
     char* home = getenv("HOME");
 
     if (!home)
@@ -73,10 +71,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       // First call, get the length
       length = GetCurrentDirectory(0, NULL);
-      pwd = (char*)malloc(length);
-
-      if (!pwd)
-        rb_sys_fail("malloc");
+      pwd = (char*)ruby_xmalloc(length);
 
       length = GetCurrentDirectory(length, pwd);
 
@@ -96,10 +91,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // First call, get the length
   length = GetFullPathName(path, 0, buffer, NULL);
-  buffer = (char*)malloc(length);
-
-  if (!buffer)
-    rb_sys_fail("malloc");
+  buffer = (char*)ruby_xmalloc(length);
 
   // Now get the path
   length = GetFullPathName(path, length, buffer, NULL);
