@@ -48,9 +48,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_raise(rb_eArgError, "can't find user %s", ++ptr);
     }
 
-    v_home = rb_str_new2(home);
-    v_path = rb_funcall(v_path, rb_intern("sub"), 2, rb_str_new2("~"), v_home);
-    path = StringValuePtr(v_path);
+    if (!PathAppend(home, ++ptr))
+      rb_sys_fail("PathAppend");
+
+    path = home;
   }
 
   if (!NIL_P(v_dir)){
