@@ -20,7 +20,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     SafeStringValue(v_dir_orig);
 
   v_path = rb_str_dup(v_path_orig);
-  rb_str_modify(v_path);
+  rb_str_modify_expand(v_path, MAX_PATH);
   path = StringValuePtr(v_path);
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
@@ -63,7 +63,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       char* dir;
       VALUE v_dir = rb_str_dup(v_dir_orig);
 
-      rb_str_modify(v_dir);
+      rb_str_modify_expand(v_dir, MAX_PATH);
       dir = StringValuePtr(v_dir);
 
       while(strstr(dir, "/"))
