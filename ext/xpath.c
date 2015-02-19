@@ -25,8 +25,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   path = StringValuePtr(v_path);
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
-  while(strstr(path, "/"))
-    path[strcspn(path, "/")] = '\\';
+  while(_tcsstr(path, "/"))
+    path[_tcscspn(path, "/")] = '\\';
 
   // Handle ~ expansion
   if (ptr = strchr(path, '~')){
@@ -38,14 +38,14 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     if(!home)
       rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
 
-    while(strstr(home, "/"))
-      home[strcspn(home, "/")] = '\\';
+    while(_tcsstr(home, "/"))
+      home[_tcscspn(home, "/")] = '\\';
 
     if (PathIsRelative(home))
       rb_raise(rb_eArgError, "non-absolute home");
 
     if (ptr[1] && ptr[1] != '\\'){
-      ptr[strcspn(ptr, "\\")] = 0; // Only read up to slash
+      ptr[_tcscspn(ptr, "\\")] = 0; // Only read up to slash
       rb_raise(rb_eArgError, "can't find user %s", ++ptr);
     }
 
@@ -57,7 +57,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Directory argument is present
   if (!NIL_P(v_dir_orig)){
-    if (!strlen(path))
+    if (!_tcslen(path))
       return v_dir_orig;
 
     if (PathIsRelative(path)){
@@ -67,8 +67,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_str_modify_expand(v_dir, MAX_PATH);
       dir = StringValuePtr(v_dir);
 
-      while(strstr(dir, "/"))
-        dir[strcspn(dir, "/")] = '\\';
+      while(_tcsstr(dir, "/"))
+        dir[_tcscspn(dir, "/")] = '\\';
 
       if(!PathAppend(dir, path))
         rb_sys_fail("PathAppend");
@@ -81,7 +81,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    if (!strlen(path)){
+    if (!_tcslen(path)){
       TCHAR* pwd = NULL;
 
       // First call, get the length
@@ -94,8 +94,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
         rb_sys_fail("GetCurrentDirectory");
 
       // Convert backslashes into forward slashes
-      while(strstr(pwd, "\\"))
-        pwd[strcspn(pwd, "\\")] = '/';
+      while(_tcsstr(pwd, "\\"))
+        pwd[_tcscspn(pwd, "\\")] = '/';
 
       return rb_str_new2(pwd);
     }
@@ -115,8 +115,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     rb_sys_fail("GetFullPathName");
 
   // Convert backslashes into forward slashes
-  while(strstr(buffer, "\\"))
-    buffer[strcspn(buffer, "\\")] = '/';
+  while(_tcsstr(buffer, "\\"))
+    buffer[_tcscspn(buffer, "\\")] = '/';
 
   v_path = rb_str_new(buffer, length);
 
