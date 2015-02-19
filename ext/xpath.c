@@ -1,12 +1,13 @@
 #include <ruby.h>
+#include <tchar.h>
 #include <windows.h>
 #include <shlwapi.h>
 
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_path_orig, v_dir_orig;
-  char* path = NULL;
-  char* buffer = NULL;
-  char* ptr;
+  TCHAR* path = NULL;
+  TCHAR* buffer = NULL;
+  TCHAR* ptr;
   int length;
 
   rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
@@ -29,7 +30,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Handle ~ expansion
   if (ptr = strchr(path, '~')){
-    char* home = getenv("HOME");
+    TCHAR* home = getenv("HOME");
 
     if (!home)
       home = getenv("USERPROFILE");
@@ -60,7 +61,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       return v_dir_orig;
 
     if (PathIsRelative(path)){
-      char* dir;
+      TCHAR* dir;
       VALUE v_dir = rb_str_dup(v_dir_orig);
 
       rb_str_modify_expand(v_dir, MAX_PATH);
@@ -81,11 +82,11 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   }
   else{
     if (!strlen(path)){
-      char* pwd = NULL;
+      TCHAR* pwd = NULL;
 
       // First call, get the length
       length = GetCurrentDirectory(0, NULL);
-      pwd = (char*)ruby_xmalloc(length);
+      pwd = (TCHAR*)ruby_xmalloc(length);
 
       length = GetCurrentDirectory(length, pwd);
 
@@ -105,7 +106,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // First call, get the length
   length = GetFullPathName(path, 0, buffer, NULL);
-  buffer = (char*)ruby_xmalloc(length);
+  buffer = (TCHAR*)ruby_xmalloc(length);
 
   // Now get the path
   length = GetFullPathName(path, length, buffer, NULL);
