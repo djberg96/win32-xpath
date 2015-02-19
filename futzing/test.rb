@@ -16,16 +16,32 @@ class Windows
   ffi_lib :kernel32
   attach_function :GetFullPathNameA, [:string, :dword, :buffer_out, :pointer], :dword
 
-  def xpath(path)
+  def xpath(path, dir=nil)
     path = path.tr("/", "\\")
-    regex = /\A(\w):([^\\]+)(.*)/i
 
+    buf = 0.chr * 512
+
+    p path
+    p PathIsRelativeA(path)
+
+    if !PathCanonicalizeA(buf, path)
+      raise
+    end
+
+    p buf.strip
+
+    #p dir
+    #p path
+
+    #regex = /\A(\w):([^\\]+)(.*)/i
+=begin
     if m = regex.match(path)
       drive = m.captures[0]
       path = m.captures[1..-1].join
       p drive
       p path
     end
+=end
 
     #p PathIsNetworkPathA(path)
     #p PathSkipRootA(path)
@@ -64,10 +80,11 @@ class Windows
 end
 
 if $0 == __FILE__
+  Windows.new.xpath("/../../a", "foo")
   #p Windows.new.xpath("C:/foo/../bar")
   #p Windows.new.xpath("C:foo")
-  Windows.new.xpath("C:foo")
-  Windows.new.xpath("C:foo/bar")
-  Windows.new.xpath("C:/foo")
+  #Windows.new.xpath("C:foo")
+  #Windows.new.xpath("C:foo/bar")
+  #Windows.new.xpath("C:/foo")
   #Windows.new.xpath("foo")
 end
