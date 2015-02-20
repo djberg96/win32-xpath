@@ -29,14 +29,32 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     path[_tcscspn(path, "/")] = '\\';
 
   // Handle ~ expansion
-  if (ptr = strchr(path, '~')){
-    TCHAR* home = getenv("HOME");
+  if (ptr = _tcschr(path, '~')){
+    DWORD size = 0;
+    TCHAR* home = NULL;
 
-    if (!home)
-      home = getenv("USERPROFILE");
+    size = GetEnvironmentVariable("HOME", NULL, 0);
+    home = (TCHAR*)ruby_xmalloc(size);
+    size = GetEnvironmentVariable("HOME", home, size);
 
-    if(!home)
-      rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+    if (size == 0){
+      if (GetLastError() != ERROR_ENVVAR_NOT_FOUND){
+        rb_sys_fail("GetEnvironmentVariable");
+      }
+      else{
+        home = NULL;
+        size = GetEnvironmentVariable("USERPROFILE", NULL, 0);
+        home = (TCHAR*)ruby_xmalloc(size);
+        size = GetEnvironmentVariable("USERPROFILE", home, size);
+
+        if (size == 0){
+          if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+            rb_sys_fail("GetEnvironmentVariable");
+          else
+            rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+        }
+      }
+    }
 
     while(_tcsstr(home, "/"))
       home[_tcscspn(home, "/")] = '\\';
