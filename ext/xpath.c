@@ -39,29 +39,30 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   if (ptr = wcschr(path, L'~')){
     DWORD size = 0;
     wchar_t* home = NULL;
+    const wchar_t* env = L"HOME";
 
-    size = GetEnvironmentVariableW(L"HOME", NULL, 0);
-    home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
-    size = GetEnvironmentVariableW(L"HOME", home, size);
+    // First, try to get HOME environment variable
+    size = GetEnvironmentVariableW(env, NULL, 0);
 
-    if (size == 0){
-      if (GetLastError() != ERROR_ENVVAR_NOT_FOUND){
-        rb_sys_fail("GetEnvironmentVariable");
-      }
-      else{
-        home = NULL;
-        size = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0);
-        home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
-        size = GetEnvironmentVariableW(L"USERPROFILE", home, size);
-
-        if (size == 0){
-          if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
-            rb_sys_fail("GetEnvironmentVariable");
-          else
-            rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
-        }
-      }
+    // If that isn't found then try USERPROFILE
+    if(!size){
+      env = L"USERPROFILE"; 
+      size = GetEnvironmentVariableW(env, home, size);
     }
+
+    // If that still isn't found then raise an errro
+    if(!size){
+      if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+        rb_sys_fail("GetEnvironmentVariable");
+      else
+        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+    }
+
+    home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+    size = GetEnvironmentVariableW(env, home, size);
+
+    if(!size)
+      rb_sys_fail("GetEnvironmentVariable");
 
     while(wcsstr(home, L"/"))
       home[wcscspn(home, L"/")] = L'\\';
