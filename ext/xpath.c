@@ -1,13 +1,13 @@
 #include <ruby.h>
-#include <tchar.h>
 #include <windows.h>
 #include <shlwapi.h>
 
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_path_orig, v_dir_orig;
-  TCHAR* path = NULL;
-  TCHAR* buffer = NULL;
-  TCHAR* ptr;
+  wchar_t* buffer = NULL;
+  wchar_t* ptr = NULL;
+  wchar_t* path = NULL;
+  char* final_path;
   int length;
 
   rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
@@ -20,22 +20,29 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   if (!NIL_P(v_dir_orig))
     SafeStringValue(v_dir_orig);
 
+  // Dup and prep string for modification
   v_path = rb_str_dup(v_path_orig);
   rb_str_modify_expand(v_path, MAX_PATH);
-  path = StringValuePtr(v_path);
+
+  // Make our path a wide string for later functions
+  length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
+  path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
+
+  if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length))
+    rb_sys_fail("MultiByteToWideChar");
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
-  while(_tcsstr(path, "/"))
-    path[_tcscspn(path, "/")] = '\\';
+  while(wcsstr(path, L"/"))
+    path[wcscspn(path, L"/")] = '\\';
 
   // Handle ~ expansion
-  if (ptr = _tcschr(path, '~')){
+  if (ptr = wcschr(path, L'~')){
     DWORD size = 0;
-    TCHAR* home = NULL;
+    wchar_t* home = NULL;
 
-    size = GetEnvironmentVariable("HOME", NULL, 0);
-    home = (TCHAR*)ruby_xmalloc(size);
-    size = GetEnvironmentVariable("HOME", home, size);
+    size = GetEnvironmentVariableW(L"HOME", NULL, 0);
+    home = (wchar_t*)ruby_xmalloc(size * sizeof(wchar_t));
+    size = GetEnvironmentVariableW(L"HOME", home, size);
 
     if (size == 0){
       if (GetLastError() != ERROR_ENVVAR_NOT_FOUND){
@@ -43,9 +50,9 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       }
       else{
         home = NULL;
-        size = GetEnvironmentVariable("USERPROFILE", NULL, 0);
-        home = (TCHAR*)ruby_xmalloc(size);
-        size = GetEnvironmentVariable("USERPROFILE", home, size);
+        size = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0);
+        home = (wchar_t*)ruby_xmalloc(size * sizeof(wchar_t));
+        size = GetEnvironmentVariableW(L"USERPROFILE", home, size);
 
         if (size == 0){
           if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
@@ -56,18 +63,18 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       }
     }
 
-    while(_tcsstr(home, "/"))
-      home[_tcscspn(home, "/")] = '\\';
+    while(wcsstr(home, L"/"))
+      home[wcscspn(home, L"/")] = '\\';
 
-    if (PathIsRelative(home))
+    if (PathIsRelativeW(home))
       rb_raise(rb_eArgError, "non-absolute home");
 
-    if (ptr[1] && ptr[1] != '\\'){
-      ptr[_tcscspn(ptr, "\\")] = 0; // Only read up to slash
-      rb_raise(rb_eArgError, "can't find user %s", ++ptr);
+    if (ptr[1] && ptr[1] != L'\\'){
+      ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
+      rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
     }
 
-    if (!PathAppend(home, ++ptr))
+    if (!PathAppendW(home, ++ptr))
       rb_sys_fail("PathAppend");
 
     path = home;
@@ -75,20 +82,25 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Directory argument is present
   if (!NIL_P(v_dir_orig)){
-    if (!_tcslen(path))
+    if (!wcslen(path))
       return v_dir_orig;
 
-    if (PathIsRelative(path)){
-      TCHAR* dir;
+    if (PathIsRelativeW(path)){
+      wchar_t* dir;
       VALUE v_dir = rb_str_dup(v_dir_orig);
 
       rb_str_modify_expand(v_dir, MAX_PATH);
-      dir = StringValuePtr(v_dir);
+  
+      length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
+      dir = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
-      while(_tcsstr(dir, "/"))
-        dir[_tcscspn(dir, "/")] = '\\';
+      if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length))
+        rb_sys_fail("MultiByteToWideChar");
 
-      if(!PathAppend(dir, path))
+      while(wcsstr(dir, L"/"))
+        dir[wcscspn(dir, L"/")] = '\\';
+
+      if(!PathAppendW(dir, path))
         rb_sys_fail("PathAppend");
 
       // Remove leading slashes from relative paths
@@ -99,44 +111,60 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     }
   }
   else{
-    if (!_tcslen(path)){
-      TCHAR* pwd = NULL;
+    if (!wcslen(path)){
+      char* pwd;
+      wchar_t* wpwd;
 
       // First call, get the length
-      length = GetCurrentDirectory(0, NULL);
-      pwd = (TCHAR*)ruby_xmalloc(length);
+      length = GetCurrentDirectoryW(0, NULL);
+      wpwd = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
-      length = GetCurrentDirectory(length, pwd);
+      length = GetCurrentDirectoryW(length, wpwd);
 
       if(!length)
         rb_sys_fail("GetCurrentDirectory");
 
       // Convert backslashes into forward slashes
-      while(_tcsstr(pwd, "\\"))
-        pwd[_tcscspn(pwd, "\\")] = '/';
+      while(wcsstr(wpwd, L"\\"))
+        wpwd[wcscspn(wpwd, L"\\")] = '/';
+
+      // Convert string back to multibyte string before returning Ruby object
+      length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, NULL, 0, NULL, NULL);
+      pwd = (char*)ruby_xmalloc(length);
+      length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
+
+      if (!length)
+        rb_sys_fail("WideCharToMultiByte");
 
       return rb_str_new2(pwd);
     }
   }
 
   // Strip all trailing backslashes
-  while (!*PathRemoveBackslash(path));
+  while (!*PathRemoveBackslashW(path));
 
   // First call, get the length
-  length = GetFullPathName(path, 0, buffer, NULL);
-  buffer = (TCHAR*)ruby_xmalloc(length);
+  length = GetFullPathNameW(path, 0, buffer, NULL);
+  buffer = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
   // Now get the path
-  length = GetFullPathName(path, length, buffer, NULL);
+  length = GetFullPathNameW(path, length, buffer, NULL);
 
   if (!length)
     rb_sys_fail("GetFullPathName");
 
   // Convert backslashes into forward slashes
-  while(_tcsstr(buffer, "\\"))
-    buffer[_tcscspn(buffer, "\\")] = '/';
+  while(wcsstr(buffer, L"\\"))
+    buffer[wcscspn(buffer, L"\\")] = '/';
 
-  v_path = rb_str_new(buffer, length);
+  length = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
+  final_path = (char*)ruby_xmalloc(length);
+  length = WideCharToMultiByte(CP_UTF8, 0, path, -1, final_path, length, NULL, NULL);
+
+  if (!length)
+    rb_sys_fail("WideCharToMultiByte");
+
+  v_path = rb_str_new(final_path, length);
 
   if (OBJ_TAINTED(v_path_orig) || rb_equal(v_path, v_path_orig) == Qfalse)
     OBJ_TAINT(v_path);
