@@ -204,17 +204,16 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   final_path = (char*)ruby_xmalloc(length);
   length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, final_path, length, NULL, NULL);
 
+  ruby_xfree(buffer);
+
   if (!length){
     ruby_xfree(final_path);
-    ruby_xfree(buffer);
     rb_sys_fail("WideCharToMultiByte");
   }
 
   v_path = rb_str_new(final_path, length - 1); // Don't count null terminator
 
-  ruby_xfree(buffer);
-
-  if (rb_enc_to_index(path_encoding)!=rb_utf8_encindex()){
+  if (rb_enc_to_index(path_encoding) != rb_utf8_encindex()){
     ec = rb_econv_open("UTF-8", rb_enc_name(path_encoding), replaceflags);
     v_path = rb_econv_str_convert(ec, v_path, ECONV_PARTIAL_INPUT);
     rb_econv_close(ec);    
