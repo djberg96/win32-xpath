@@ -26,7 +26,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Make our path a wide string for later functions
   length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
-  path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
+  path = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
 
   if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length))
     rb_sys_fail("MultiByteToWideChar");
@@ -41,7 +41,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     wchar_t* home = NULL;
 
     size = GetEnvironmentVariableW(L"HOME", NULL, 0);
-    home = (wchar_t*)ruby_xmalloc(size * sizeof(wchar_t));
+    home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
     size = GetEnvironmentVariableW(L"HOME", home, size);
 
     if (size == 0){
@@ -51,7 +51,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       else{
         home = NULL;
         size = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0);
-        home = (wchar_t*)ruby_xmalloc(size * sizeof(wchar_t));
+        home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
         size = GetEnvironmentVariableW(L"USERPROFILE", home, size);
 
         if (size == 0){
@@ -92,7 +92,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_str_modify_expand(v_dir, MAX_PATH);
   
       length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
-      dir = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
+      dir = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
 
       if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length))
         rb_sys_fail("MultiByteToWideChar");
