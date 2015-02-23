@@ -110,7 +110,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
         dir[wcscspn(dir, L"/")] = L'\\';
 
       if(!PathAppendW(dir, path)){
-        rb_xfree(dir);
+        ruby_xfree(dir);
         rb_sys_fail("PathAppend");
       }
 
