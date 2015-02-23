@@ -164,7 +164,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   if (!length)
     rb_sys_fail("WideCharToMultiByte");
 
-  v_path = rb_str_new(final_path, length);
+  v_path = rb_str_new(final_path, length - 1); // Don't count null terminator
 
   if (OBJ_TAINTED(v_path_orig) || rb_equal(v_path, v_path_orig) == Qfalse)
     OBJ_TAINT(v_path);
