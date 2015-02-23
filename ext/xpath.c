@@ -1,4 +1,5 @@
 #include <ruby.h>
+#include <ruby/encoding.h>
 #include <windows.h>
 #include <shlwapi.h>
 
@@ -9,6 +10,9 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   wchar_t* path = NULL;
   char* final_path;
   int length;
+  rb_encoding* path_encoding;
+  rb_econv_t* ec;
+  const int replaceflags = ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE;
 
   rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
 
@@ -21,7 +25,17 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     SafeStringValue(v_dir_orig);
 
   // Dup and prep string for modification
-  v_path = rb_str_dup(v_path_orig);
+  path_encoding = rb_enc_get(v_path_orig);
+
+  if (rb_enc_to_index(path_encoding) == rb_utf8_encindex()){
+    v_path = rb_str_dup(v_path_orig); 
+  }
+  else{
+    ec = rb_econv_open(rb_enc_name(path_encoding), "UTF-8", replaceflags);
+    v_path = rb_econv_str_convert(ec, v_path_orig, ECONV_PARTIAL_INPUT);
+    rb_econv_close(ec);
+  }
+  
   rb_str_modify_expand(v_path, MAX_PATH);
 
   // Make our path a wide string for later functions
@@ -94,7 +108,19 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     if (PathIsRelativeW(path)){
       wchar_t* dir;
-      VALUE v_dir = rb_str_dup(v_dir_orig);
+      VALUE v_dir;
+      rb_encoding* dir_encoding;
+
+      dir_encoding = rb_enc_get(v_dir_orig);
+
+      if (rb_enc_to_index(dir_encoding) == rb_utf8_encindex()){
+        v_dir = rb_str_dup(v_dir_orig); 
+      }
+      else{
+        ec = rb_econv_open(rb_enc_name(dir_encoding), "UTF-8", replaceflags);
+        v_dir = rb_econv_str_convert(ec, v_dir_orig, ECONV_PARTIAL_INPUT);
+        rb_econv_close(ec);
+      }
 
       rb_str_modify_expand(v_dir, MAX_PATH);
   
@@ -188,6 +214,14 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   ruby_xfree(buffer);
 
+  if (rb_enc_to_index(path_encoding)!=rb_utf8_encindex()){
+    ec = rb_econv_open("UTF-8", rb_enc_name(path_encoding), replaceflags);
+    v_path = rb_econv_str_convert(ec, v_path, ECONV_PARTIAL_INPUT);
+    rb_econv_close(ec);    
+  }
+
+  rb_enc_associate(v_path, path_encoding);
+  
   if (OBJ_TAINTED(v_path_orig) || rb_equal(v_path, v_path_orig) == Qfalse)
     OBJ_TAINT(v_path);
 
