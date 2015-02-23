@@ -93,14 +93,19 @@ class Test_XPath < Test::Unit::TestCase
     assert_false(File.xpath('//foo').tainted?)
   end
 
-  test "converts a pathname to an absolute pathname using '~' as base" do
+  test "converts a pathname to an absolute pathname using tilde as base" do
     assert_equal(@home, File.xpath('~'))
     assert_equal("#{@home}/foo", File.xpath('~/foo'))
   end
 
-  test "converts a pathname to an absolute pathname using '~' for UNC path" do
+  test "converts a pathname to an absolute pathname using tilde for UNC path" do
     ENV['HOME'] = @unc
     assert_equal(@unc, File.xpath('~'))
+  end
+
+  test "converts a tilde to path if used for dir argument" do
+    assert_equal(@home, File.xpath('', '~'))
+    assert_equal("#{@home}/foo", File.xpath('foo', '~'))
   end
 
   test "does not modify a HOME string argument" do
