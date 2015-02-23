@@ -28,8 +28,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
   path = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
 
-  if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length))
+  if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length)){
+    ruby_xfree(path);
     rb_sys_fail("MultiByteToWideChar");
+  }
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
   while(wcsstr(path, L"/"))
@@ -61,8 +63,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
     size = GetEnvironmentVariableW(env, home, size);
 
-    if(!size)
+    if(!size){
+      ruby_xfree(home);
       rb_sys_fail("GetEnvironmentVariable");
+    }
 
     while(wcsstr(home, L"/"))
       home[wcscspn(home, L"/")] = L'\\';
@@ -75,8 +79,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
     }
 
-    if (!PathAppendW(home, ++ptr))
+    if (!PathAppendW(home, ++ptr)){
+      ruby_xfree(home);
       rb_sys_fail("PathAppend");
+    }
 
     path = home;
   }
@@ -95,8 +101,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
       dir = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
 
-      if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length))
+      if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
+        ruby_xfree(dir);
         rb_sys_fail("MultiByteToWideChar");
+      }
 
       while(wcsstr(dir, L"/"))
         dir[wcscspn(dir, L"/")] = L'\\';
@@ -122,8 +130,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       length = GetCurrentDirectoryW(length, wpwd);
 
-      if(!length)
+      if(!length){
+        ruby_xfree(wpwd);
         rb_sys_fail("GetCurrentDirectory");
+      }
 
       // Convert backslashes into forward slashes
       while(wcsstr(wpwd, L"\\"))
@@ -134,8 +144,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       pwd = (char*)ruby_xmalloc(length);
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
 
-      if (!length)
+      if (!length){
+        ruby_xfree(pwd);
         rb_sys_fail("WideCharToMultiByte");
+      }
 
       return rb_str_new2(pwd);
     }
@@ -151,8 +163,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   // Now get the path
   length = GetFullPathNameW(path, length, buffer, NULL);
 
-  if (!length)
+  if (!length){
+    ruby_xfree(buffer);
     rb_sys_fail("GetFullPathName");
+  }
 
   // Convert backslashes into forward slashes
   while(wcsstr(buffer, L"\\"))
@@ -162,10 +176,15 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   final_path = (char*)ruby_xmalloc(length);
   length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, final_path, length, NULL, NULL);
 
-  if (!length)
+  if (!length){
+    ruby_xfree(final_path);
+    ruby_xfree(buffer);
     rb_sys_fail("WideCharToMultiByte");
+  }
 
   v_path = rb_str_new(final_path, length - 1); // Don't count null terminator
+
+  ruby_xfree(buffer);
 
   if (OBJ_TAINTED(v_path_orig) || rb_equal(v_path, v_path_orig) == Qfalse)
     OBJ_TAINT(v_path);
