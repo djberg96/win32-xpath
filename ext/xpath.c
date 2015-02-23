@@ -52,7 +52,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       size = GetEnvironmentVariableW(env, home, size);
     }
 
-    // If that still isn't found then raise an errro
+    // If that still isn't found then raise an error
     if(!size){
       if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
         rb_sys_fail("GetEnvironmentVariable");
@@ -109,8 +109,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       while(wcsstr(dir, L"/"))
         dir[wcscspn(dir, L"/")] = L'\\';
 
-      if(!PathAppendW(dir, path))
+      if(!PathAppendW(dir, path)){
+        rb_xfree(dir);
         rb_sys_fail("PathAppend");
+      }
 
       // Remove leading slashes from relative paths
       if (dir[0] == L'\\')
