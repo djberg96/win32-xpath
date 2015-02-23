@@ -3,6 +3,47 @@
 #include <windows.h>
 #include <shlwapi.h>
 
+wchar_t* expand_tilde();
+
+wchar_t* expand_tilde(){
+  DWORD size = 0;
+  wchar_t* home = NULL;
+  const wchar_t* env = L"HOME";
+
+  // First, try to get HOME environment variable
+  size = GetEnvironmentVariableW(env, NULL, 0);
+
+  // If that isn't found then try USERPROFILE
+  if(!size){
+    env = L"USERPROFILE"; 
+    size = GetEnvironmentVariableW(env, home, size);
+  }
+
+  // If that still isn't found then raise an error
+  if(!size){
+    if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+      rb_sys_fail("GetEnvironmentVariable");
+    else
+      rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+  }
+
+  home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+  size = GetEnvironmentVariableW(env, home, size);
+
+  if(!size){
+    ruby_xfree(home);
+    rb_sys_fail("GetEnvironmentVariable");
+  }
+
+  while(wcsstr(home, L"/"))
+    home[wcscspn(home, L"/")] = L'\\';
+
+  if (PathIsRelativeW(home))
+    rb_raise(rb_eArgError, "non-absolute home");
+
+  return home;
+}
+
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_path_orig, v_dir_orig;
   wchar_t* buffer = NULL;
@@ -53,40 +94,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Handle ~ expansion
   if (ptr = wcschr(path, L'~')){
-    DWORD size = 0;
-    wchar_t* home = NULL;
-    const wchar_t* env = L"HOME";
-
-    // First, try to get HOME environment variable
-    size = GetEnvironmentVariableW(env, NULL, 0);
-
-    // If that isn't found then try USERPROFILE
-    if(!size){
-      env = L"USERPROFILE"; 
-      size = GetEnvironmentVariableW(env, home, size);
-    }
-
-    // If that still isn't found then raise an error
-    if(!size){
-      if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
-        rb_sys_fail("GetEnvironmentVariable");
-      else
-        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
-    }
-
-    home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
-    size = GetEnvironmentVariableW(env, home, size);
-
-    if(!size){
-      ruby_xfree(home);
-      rb_sys_fail("GetEnvironmentVariable");
-    }
-
-    while(wcsstr(home, L"/"))
-      home[wcscspn(home, L"/")] = L'\\';
-
-    if (PathIsRelativeW(home))
-      rb_raise(rb_eArgError, "non-absolute home");
+    wchar_t* home = expand_tilde(path);
 
     if (ptr[1] && ptr[1] != L'\\'){
       ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
@@ -103,8 +111,9 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Directory argument is present
   if (!NIL_P(v_dir_orig)){
-    if (!wcslen(path))
+    if (!wcslen(path)){
       return v_dir_orig;
+    }
 
     if (PathIsRelativeW(path)){
       wchar_t* dir;
@@ -123,13 +132,22 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       }
 
       rb_str_modify_expand(v_dir, MAX_PATH);
-  
+
       length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
       dir = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
 
       if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
         ruby_xfree(dir);
         rb_sys_fail("MultiByteToWideChar");
+      }
+
+      if (ptr = wcschr(dir, L'~')){
+        dir = expand_tilde(dir);
+
+        if (ptr[1] && ptr[1] != L'\\'){
+          ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
+          rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
+        }
       }
 
       while(wcsstr(dir, L"/"))
