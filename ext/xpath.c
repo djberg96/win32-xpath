@@ -33,7 +33,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
   while(wcsstr(path, L"/"))
-    path[wcscspn(path, L"/")] = '\\';
+    path[wcscspn(path, L"/")] = L'\\';
 
   // Handle ~ expansion
   if (ptr = wcschr(path, L'~')){
@@ -64,7 +64,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     }
 
     while(wcsstr(home, L"/"))
-      home[wcscspn(home, L"/")] = '\\';
+      home[wcscspn(home, L"/")] = L'\\';
 
     if (PathIsRelativeW(home))
       rb_raise(rb_eArgError, "non-absolute home");
@@ -98,7 +98,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
         rb_sys_fail("MultiByteToWideChar");
 
       while(wcsstr(dir, L"/"))
-        dir[wcscspn(dir, L"/")] = '\\';
+        dir[wcscspn(dir, L"/")] = L'\\';
 
       if(!PathAppendW(dir, path))
         rb_sys_fail("PathAppend");
@@ -126,7 +126,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       // Convert backslashes into forward slashes
       while(wcsstr(wpwd, L"\\"))
-        wpwd[wcscspn(wpwd, L"\\")] = '/';
+        wpwd[wcscspn(wpwd, L"\\")] = L'/';
 
       // Convert string back to multibyte string before returning Ruby object
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, NULL, 0, NULL, NULL);
