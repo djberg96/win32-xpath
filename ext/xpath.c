@@ -104,7 +104,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
         rb_sys_fail("PathAppend");
 
       // Remove leading slashes from relative paths
-      if (dir[0] == '\\')
+      if (dir[0] == L'\\')
         ++dir;
 
       path = dir;
@@ -155,11 +155,11 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Convert backslashes into forward slashes
   while(wcsstr(buffer, L"\\"))
-    buffer[wcscspn(buffer, L"\\")] = '/';
+    buffer[wcscspn(buffer, L"\\")] = L'/';
 
-  length = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
+  length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
   final_path = (char*)ruby_xmalloc(length);
-  length = WideCharToMultiByte(CP_UTF8, 0, path, -1, final_path, length, NULL, NULL);
+  length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, final_path, length, NULL, NULL);
 
   if (!length)
     rb_sys_fail("WideCharToMultiByte");
