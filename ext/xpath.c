@@ -94,12 +94,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Handle ~ expansion. Do not allow ~user syntax.
   if (ptr = wcschr(path, L'~')){
-    wchar_t* home = expand_tilde(path);
-
     if (ptr[1] && ptr[1] != L'\\'){
       ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
       rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
     }
+
+    wchar_t* home = expand_tilde(path);
 
     if (!PathAppendW(home, ++ptr)){
       ruby_xfree(home);
@@ -140,12 +140,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       dir[wcscspn(dir, L"/")] = L'\\';
 
     if (ptr = wcschr(dir, L'~')){
-      dir = expand_tilde();
-
       if (ptr[1] && ptr[1] != L'\\'){
         ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
         rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
       }
+
+      dir = expand_tilde();
 
       if (!PathAppendW(dir, ++ptr)){
         ruby_xfree(dir);
