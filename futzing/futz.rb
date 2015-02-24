@@ -1,16 +1,38 @@
 require 'xpath'
 require 'tmpdir'
 
-path = "../a"
-tmp = Dir.tmpdir
+#ENV['HOME'] = nil
+#ENV['USERPROFILE'] = nil
+#ENV['USERPROFILE'] = "C:/bogus"
+
+#p File.xpath("foo", "~")
+#p File.expand_path("foo", "~")
+#p File.xpath("", "~")
+#p File.expand_path("", "~")
+p File.expand_path("foo", "~/bar")
+p File.xpath("foo", "~/bar")
+#p File.xpath("")
+#p File.xpath("C:/foo/bar")
+#p File.xpath("C:/foo/bar///")
+#p File.xpath('foo', Dir.tmpdir)
+#p File.xpath("C:/foo/bar", "D:/foo")
+#p File.xpath("foo")
+#p File.xpath("foo", "bar")
+
+#ENV['HOME'] = nil
+#ENV['USERPROFILE'] = nil
+#p File.xpath("~")
+
+#path = "../a"
+#tmp = Dir.tmpdir
 
 #p path
 #p tmp
 
-100.times{
-  File.xpath(path, tmp)
-  File.xpath('foo', tmp)
-}
+#100.times{
+#  File.xpath(path, tmp)
+#  File.xpath('foo', tmp)
+#}
 
 #p path
 #p tmp
