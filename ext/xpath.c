@@ -3,8 +3,7 @@
 #include <windows.h>
 #include <shlwapi.h>
 
-wchar_t* expand_tilde();
-
+// Helper function to expand tilde into full path
 wchar_t* expand_tilde(){
   DWORD size = 0;
   wchar_t* home = NULL;
@@ -44,6 +43,7 @@ wchar_t* expand_tilde(){
   return home;
 }
 
+// My version of File.expand_path
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_path_orig, v_dir_orig;
   wchar_t* buffer = NULL;
@@ -92,7 +92,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   while(wcsstr(path, L"/"))
     path[wcscspn(path, L"/")] = L'\\';
 
-  // Handle ~ expansion
+  // Handle ~ expansion. Do not allow ~user syntax.
   if (ptr = wcschr(path, L'~')){
     wchar_t* home = expand_tilde(path);
 
