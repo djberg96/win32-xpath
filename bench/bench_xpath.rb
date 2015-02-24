@@ -63,4 +63,12 @@ Benchmark.bm(30) do |x|
     str = ""
     MAX.times{ File.xpath(str) }
   end
+
+  x.report("expand_path('', '~')") do
+    MAX.times{ File.expand_path('', '~') }
+  end
+
+  x.report("xpath('', '~')") do
+    MAX.times{ File.xpath('', '~') }
+  end
 end
