@@ -105,6 +105,7 @@ class Test_XPath < Test::Unit::TestCase
 
   test "converts a tilde to path if used for dir argument" do
     assert_equal(@home, File.xpath('', '~'))
+    assert_equal("#{@home}/foo", File.xpath('', '~/foo'))
     assert_equal("#{@home}/foo", File.xpath('foo', '~'))
   end
 

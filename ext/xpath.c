@@ -111,48 +111,47 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Directory argument is present
   if (!NIL_P(v_dir_orig)){
-    if (!wcslen(path)){
-      return v_dir_orig;
+    wchar_t* dir;
+    VALUE v_dir;
+    rb_encoding* dir_encoding;
+
+    dir_encoding = rb_enc_get(v_dir_orig);
+
+    if (rb_enc_to_index(dir_encoding) == rb_utf8_encindex()){
+      v_dir = rb_str_dup(v_dir_orig);
+    }
+    else{
+      ec = rb_econv_open(rb_enc_name(dir_encoding), "UTF-8", replaceflags);
+      v_dir = rb_econv_str_convert(ec, v_dir_orig, ECONV_PARTIAL_INPUT);
+      rb_econv_close(ec);
     }
 
-    if (PathIsRelativeW(path)){
-      wchar_t* dir;
-      VALUE v_dir;
-      rb_encoding* dir_encoding;
+    rb_str_modify_expand(v_dir, MAX_PATH);
 
-      dir_encoding = rb_enc_get(v_dir_orig);
+    length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
+    dir = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
 
-      if (rb_enc_to_index(dir_encoding) == rb_utf8_encindex()){
-        v_dir = rb_str_dup(v_dir_orig); 
+    if (!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
+      ruby_xfree(dir);
+      rb_sys_fail("MultiByteToWideChar");
+    }
+
+    while (wcsstr(dir, L"/"))
+      dir[wcscspn(dir, L"/")] = L'\\';
+
+    if (ptr = wcschr(dir, L'~')){
+      dir = expand_tilde(dir);
+
+      if (ptr[1] && ptr[1] != L'\\'){
+        ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
+        rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
       }
-      else{
-        ec = rb_econv_open(rb_enc_name(dir_encoding), "UTF-8", replaceflags);
-        v_dir = rb_econv_str_convert(ec, v_dir_orig, ECONV_PARTIAL_INPUT);
-        rb_econv_close(ec);
-      }
+    }
 
-      rb_str_modify_expand(v_dir, MAX_PATH);
+    if (!wcslen(path))
+      path = dir;
 
-      length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
-      dir = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
-
-      if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
-        ruby_xfree(dir);
-        rb_sys_fail("MultiByteToWideChar");
-      }
-
-      if (ptr = wcschr(dir, L'~')){
-        dir = expand_tilde(dir);
-
-        if (ptr[1] && ptr[1] != L'\\'){
-          ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
-          rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
-        }
-      }
-
-      while(wcsstr(dir, L"/"))
-        dir[wcscspn(dir, L"/")] = L'\\';
-
+    if (PathIsRelativeW(path)){ 
       if(!PathAppendW(dir, path)){
         ruby_xfree(dir);
         rb_sys_fail("PathAppend");
