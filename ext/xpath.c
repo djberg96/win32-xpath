@@ -140,11 +140,16 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       dir[wcscspn(dir, L"/")] = L'\\';
 
     if (ptr = wcschr(dir, L'~')){
-      dir = expand_tilde(dir);
+      dir = expand_tilde();
 
       if (ptr[1] && ptr[1] != L'\\'){
         ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
         rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
+      }
+
+      if (!PathAppendW(dir, ++ptr)){
+        ruby_xfree(dir);
+        rb_sys_fail("PathAppend");
       }
     }
 
