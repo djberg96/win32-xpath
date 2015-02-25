@@ -1,6 +1,14 @@
 require 'xpath'
 require 'tmpdir'
 
+p File.xpath("~")
+#p File.xpath("~djberge", "foo")
+#p File.xpath("~/foo")
+#p File.xpath("", "~djberge")
+p File.xpath("~djberge")
+p File.xpath("~djberge/foo/bar")
+p File.xpath("~bogus")
+
 #ENV['HOME'] = nil
 #ENV['USERPROFILE'] = nil
 #ENV['USERPROFILE'] = "C:/bogus"
@@ -9,8 +17,8 @@ require 'tmpdir'
 #p File.expand_path("foo", "~")
 #p File.xpath("", "~")
 #p File.expand_path("", "~")
-p File.expand_path("foo", "~/bar")
-p File.xpath("foo", "~/bar")
+#p File.expand_path("foo", "~/bar")
+#p File.xpath("foo", "~/bar")
 #p File.xpath("")
 #p File.xpath("C:/foo/bar")
 #p File.xpath("C:/foo/bar///")
