@@ -12,12 +12,12 @@ wchar_t* find_user(wchar_t* str){
   DWORD cbSid, cbDom;
   SID_NAME_USE peUse;
   LPWSTR str_sid;
+  LONG lpcbValue, rv;
+  HKEY phkResult;
   wchar_t* dom;
-  wchar_t* subkey;
   wchar_t* kvalue;
-  LONG lpcbValue;
-  HKEY phkResult = 0;
-  const wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
+  wchar_t subkey[MAX_PATH];
+  wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
   sid = (SID*)ruby_xmalloc(MAX_PATH);
   dom = (wchar_t*)ruby_xmalloc(MAX_PATH);
@@ -31,17 +31,15 @@ wchar_t* find_user(wchar_t* str){
   if (!ConvertSidToStringSidW(sid, &str_sid))
     rb_sys_fail("ConvertSidToStringSid");
 
-  subkey = (wchar_t*)malloc(MAX_WPATH);
-  kvalue = (wchar_t*)malloc(MAX_WPATH);
+  swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid);
 
-  // Is there a better way?
-  wcscat(subkey, key_base);
-  wcscat(subkey, str_sid);
+  rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
 
-  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult))
+  if(rv != ERROR_SUCCESS)
     rb_sys_fail("RegOpenKeyEx");
 
-  lpcbValue = MAX_PATH * sizeof(wchar_t);
+  kvalue = (wchar_t*)malloc(MAX_WPATH);
+  lpcbValue = MAX_WPATH;
 
   if (RegQueryValueW(phkResult, subkey, kvalue, &lpcbValue))
     rb_sys_fail("RegQueryValue");
