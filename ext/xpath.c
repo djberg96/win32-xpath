@@ -7,7 +7,6 @@
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
 
 // Helper function to find user's home directory
-// TODO: Only read up to first slash
 wchar_t* find_user(wchar_t* str){
   SID* sid;
   DWORD cbSid, cbDom, cbData, lpType;
@@ -27,8 +26,8 @@ wchar_t* find_user(wchar_t* str){
     str[wcscspn(str, L"\\")] = 0;
   }
 
-  sid = (SID*)ruby_xmalloc(MAX_PATH);
-  dom = (wchar_t*)ruby_xmalloc(MAX_PATH);
+  sid = (SID*)ruby_xmalloc(MAX_WPATH);
+  dom = (wchar_t*)ruby_xmalloc(MAX_WPATH);
 
   cbSid = MAX_PATH;
   cbDom = MAX_PATH;
@@ -104,7 +103,7 @@ wchar_t* expand_tilde(){
       rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
   }
 
-  home = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+  home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
   size = GetEnvironmentVariableW(env, home, size);
 
   if(!size){
