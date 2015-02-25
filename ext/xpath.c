@@ -47,7 +47,7 @@ wchar_t* find_user(wchar_t* str){
   }
 
   // Mash the stringified SID onto our base key
-  swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid);
+  swprintf(subkey, MAX_WPATH, L"%s%s", key_base, str_sid);
 
   // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
@@ -72,7 +72,7 @@ wchar_t* find_user(wchar_t* str){
 
   // Append any remaining path data that was originally present
   if (ptr)
-    swprintf(lpData, MAX_PATH, L"%s/%s", lpData, ptr);
+    swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr);
 
   ruby_xfree(sid);
   ruby_xfree(dom);
