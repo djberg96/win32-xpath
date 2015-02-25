@@ -9,14 +9,14 @@
 // Helper function to find user's home directory
 wchar_t* find_user(wchar_t* str){
   SID* sid;
-  DWORD cbSid, cbDom;
+  DWORD cbSid, cbDom, cbData, lpType;
   SID_NAME_USE peUse;
   LPWSTR str_sid;
-  LONG lpcbValue, rv;
+  LONG rv;
   HKEY phkResult;
-  wchar_t* dom;
-  wchar_t* kvalue;
   wchar_t subkey[MAX_PATH];
+  wchar_t* lpData;
+  wchar_t* dom;
   wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
   sid = (SID*)ruby_xmalloc(MAX_PATH);
@@ -35,16 +35,19 @@ wchar_t* find_user(wchar_t* str){
 
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
 
-  if(rv != ERROR_SUCCESS)
+  if (rv != ERROR_SUCCESS)
     rb_sys_fail("RegOpenKeyEx");
 
-  kvalue = (wchar_t*)malloc(MAX_WPATH);
-  lpcbValue = MAX_WPATH;
+  lpData = (wchar_t*)malloc(MAX_WPATH);
+  cbData = MAX_WPATH;
+  lpType = REG_EXPAND_SZ;
 
-  if (RegQueryValueW(phkResult, subkey, kvalue, &lpcbValue))
-    rb_sys_fail("RegQueryValue");
+  rv = RegQueryValueExW(phkResult, L"ProfileImagePath", NULL, &lpType, (LPBYTE)lpData, &cbData);
 
-  return kvalue;
+  if (rv != ERROR_SUCCESS)
+    rb_sys_fail("RegQueryValueEx");
+
+  return lpData;
 }
 
 // Helper function to expand tilde into full path
