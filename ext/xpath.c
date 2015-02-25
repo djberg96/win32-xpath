@@ -2,6 +2,37 @@
 #include <ruby/encoding.h>
 #include <windows.h>
 #include <shlwapi.h>
+#include <sddl.h>
+
+// Helper function to find user's home directory
+wchar_t* find_user(wchar_t* str){
+  SID* sid;
+  wchar_t* dom, base;
+  wchar_t* subkey;
+  DWORD cbSid, cbDom;
+  SID_NAME_USE peUse;
+  LPWSTR str_sid;
+
+  sid = (SID*)ruby_xmalloc(MAX_PATH);
+  dom = (wchar_t*)ruby_xmalloc(MAX_PATH);
+
+  cbSid = MAX_PATH;
+  cbDom = MAX_PATH;
+
+  if (!LookupAccountNameW(NULL, str, sid, &cbSid, dom, &cbDom, &peUse))
+    rb_raise(rb_eArgError, "can't find user %ls", str);
+    
+  if (!ConvertSidToStringSidW(sid, &str_sid))
+    rb_sys_fail("ConvertSidToStringSid");
+
+  subkey = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+
+  base = L'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\';
+  //swprintf(subkey, MAX_PATH, L"%ls%ls", base, str_sid);
+  //printf("subkey: %ls", subkey);
+
+  return str;
+}
 
 // Helper function to expand tilde into full path
 wchar_t* expand_tilde(){
@@ -92,18 +123,21 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   while(wcsstr(path, L"/"))
     path[wcscspn(path, L"/")] = L'\\';
 
-  // Handle ~ expansion. Do not allow ~user syntax.
+  // Handle ~ expansion.
   if (ptr = wcschr(path, L'~')){
+    wchar_t* home;
+
+    // Handle both ~/user and ~user syntax
     if (ptr[1] && ptr[1] != L'\\'){
-      ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
-      rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
+      home = find_user(++ptr);
     }
+    else{
+      home = expand_tilde(path);
 
-    wchar_t* home = expand_tilde(path);
-
-    if (!PathAppendW(home, ++ptr)){
-      ruby_xfree(home);
-      rb_sys_fail("PathAppend");
+      if (!PathAppendW(home, ++ptr)){
+        ruby_xfree(home);
+        rb_sys_fail("PathAppend");
+      }
     }
 
     path = home;
