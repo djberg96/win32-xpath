@@ -7,6 +7,7 @@
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
 
 // Helper function to find user's home directory
+// TODO: Only read up to first slash
 wchar_t* find_user(wchar_t* str){
   SID* sid;
   DWORD cbSid, cbDom, cbData, lpType;
@@ -17,7 +18,14 @@ wchar_t* find_user(wchar_t* str){
   wchar_t subkey[MAX_PATH];
   wchar_t* lpData;
   wchar_t* dom;
+  wchar_t* ptr;
   wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
+
+  // Read up until first backslash, and preserve the rest for later
+  if (ptr = wcschr(str, L'\\')){
+    ptr++;
+    str[wcscspn(str, L"\\")] = 0;
+  }
 
   sid = (SID*)ruby_xmalloc(MAX_PATH);
   dom = (wchar_t*)ruby_xmalloc(MAX_PATH);
@@ -25,28 +33,51 @@ wchar_t* find_user(wchar_t* str){
   cbSid = MAX_PATH;
   cbDom = MAX_PATH;
 
-  if (!LookupAccountNameW(NULL, str, sid, &cbSid, dom, &cbDom, &peUse))
+  // Get the user's SID
+  if (!LookupAccountNameW(NULL, str, sid, &cbSid, dom, &cbDom, &peUse)){
+    ruby_xfree(sid);
+    ruby_xfree(dom);
     rb_raise(rb_eArgError, "can't find user %ls", str);
+  }
     
-  if (!ConvertSidToStringSidW(sid, &str_sid))
+  // Get the stringy version of the SID
+  if (!ConvertSidToStringSidW(sid, &str_sid)){
+    ruby_xfree(sid);
+    ruby_xfree(dom);
     rb_sys_fail("ConvertSidToStringSid");
+  }
 
+  // Mash the stringified SID onto our base key
   swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid);
 
+  // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
 
-  if (rv != ERROR_SUCCESS)
+  if (rv != ERROR_SUCCESS){
+    ruby_xfree(sid);
+    ruby_xfree(dom);
     rb_sys_fail("RegOpenKeyEx");
+  }
 
   lpData = (wchar_t*)malloc(MAX_WPATH);
   cbData = MAX_WPATH;
   lpType = REG_EXPAND_SZ;
 
+  // Finally, get the user's home directory
   rv = RegQueryValueExW(phkResult, L"ProfileImagePath", NULL, &lpType, (LPBYTE)lpData, &cbData);
 
-  if (rv != ERROR_SUCCESS)
-    rb_sys_fail("RegQueryValueEx");
+  if (rv != ERROR_SUCCESS){
+    ruby_xfree(lpData);
+    rb_raise(rb_eArgError, "can't find user %ls", str);
+  }
 
+  // Append any remaining path data that was originally present
+  if (ptr)
+    swprintf(lpData, MAX_PATH, L"%s/%s", lpData, ptr);
+
+  ruby_xfree(sid);
+  ruby_xfree(dom);
+  
   return lpData;
 }
 
@@ -191,15 +222,15 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     if (ptr = wcschr(dir, L'~')){
       if (ptr[1] && ptr[1] != L'\\'){
-        ptr[wcscspn(ptr, L"\\")] = 0; // Only read up to slash
-        rb_raise(rb_eArgError, "can't find user %ls", ++ptr);
+        dir = find_user(++ptr);
       }
+      else{
+        dir = expand_tilde();
 
-      dir = expand_tilde();
-
-      if (!PathAppendW(dir, ++ptr)){
-        ruby_xfree(dir);
-        rb_sys_fail("PathAppend");
+        if (!PathAppendW(dir, ++ptr)){
+          ruby_xfree(dir);
+          rb_sys_fail("PathAppend");
+        }
       }
     }
 
