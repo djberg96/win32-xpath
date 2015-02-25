@@ -4,14 +4,20 @@
 #include <shlwapi.h>
 #include <sddl.h>
 
+#define MAX_WPATH MAX_PATH * sizeof(wchar_t)
+
 // Helper function to find user's home directory
 wchar_t* find_user(wchar_t* str){
   SID* sid;
-  wchar_t* dom, base;
-  wchar_t* subkey;
   DWORD cbSid, cbDom;
   SID_NAME_USE peUse;
   LPWSTR str_sid;
+  wchar_t* dom;
+  wchar_t* subkey;
+  wchar_t* kvalue;
+  LONG lpcbValue;
+  HKEY phkResult = 0;
+  const wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
   sid = (SID*)ruby_xmalloc(MAX_PATH);
   dom = (wchar_t*)ruby_xmalloc(MAX_PATH);
@@ -25,13 +31,22 @@ wchar_t* find_user(wchar_t* str){
   if (!ConvertSidToStringSidW(sid, &str_sid))
     rb_sys_fail("ConvertSidToStringSid");
 
-  subkey = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+  subkey = (wchar_t*)malloc(MAX_WPATH);
+  kvalue = (wchar_t*)malloc(MAX_WPATH);
 
-  base = L'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\';
-  //swprintf(subkey, MAX_PATH, L"%ls%ls", base, str_sid);
-  //printf("subkey: %ls", subkey);
+  // Is there a better way?
+  wcscat(subkey, key_base);
+  wcscat(subkey, str_sid);
 
-  return str;
+  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult))
+    rb_sys_fail("RegOpenKeyEx");
+
+  lpcbValue = MAX_PATH * sizeof(wchar_t);
+
+  if (RegQueryValueW(phkResult, subkey, kvalue, &lpcbValue))
+    rb_sys_fail("RegQueryValue");
+
+  return kvalue;
 }
 
 // Helper function to expand tilde into full path
