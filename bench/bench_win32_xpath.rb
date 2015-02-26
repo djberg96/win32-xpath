@@ -1,8 +1,7 @@
 require 'benchmark'
-require 'expand_path'
 
 MAX = 100000
-puts "Old File.expand_path"
+puts "\nOld File.expand_path"
 
 Benchmark.bm(30) do |x|
   x.report("expand_path('foo/bar')") do
