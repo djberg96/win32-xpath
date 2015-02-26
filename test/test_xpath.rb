@@ -1,6 +1,6 @@
 require 'test-unit'
 require 'tmpdir'
-require 'xpath'
+require 'win32/xpath'
 require 'etc'
 
 class Test_XPath < Test::Unit::TestCase
@@ -162,6 +162,10 @@ class Test_XPath < Test::Unit::TestCase
     klass = Class.new{ def to_path; "a/b/c"; end }
     obj = klass.new
     assert_equal("#{@pwd}/a/b/c", File.xpath(obj))
+  end
+
+  test "works with unicode characters" do
+    assert_equal("#{@pwd}/Ελλάσ", File.xpath("Ελλάσ"))
   end
 
   def teardown
