@@ -1,7 +1,8 @@
 require 'benchmark'
-require 'xpath'
+require 'expand_path'
 
 MAX = 100000
+puts "Old File.expand_path"
 
 Benchmark.bm(30) do |x|
   x.report("expand_path('foo/bar')") do
@@ -9,19 +10,9 @@ Benchmark.bm(30) do |x|
     MAX.times{ File.expand_path(str) }
   end
 
-  x.report("xpath('foo/bar')") do
-    str = "foo/bar"
-    MAX.times{ File.xpath(str) }
-  end
-
   x.report("expand_path('C:/foo/bar')") do
     str = "C:/foo/bar"
     MAX.times{ File.expand_path(str) }
-  end
-
-  x.report("xpath('C:/foo/bar')") do
-    str = "C:/foo/bar"
-    MAX.times{ File.xpath(str) }
   end
 
   x.report("expand_path('//foo/bar')") do
@@ -29,19 +20,9 @@ Benchmark.bm(30) do |x|
     MAX.times{ File.expand_path(str) }
   end
 
-  x.report("xpath('//foo/bar')") do
-    str = "//foo/bar"
-    MAX.times{ File.xpath(str) }
-  end
-
   x.report("expand_path('foo//bar///')") do
     str = "foo//bar///"
     MAX.times{ File.expand_path(str) }
-  end
-
-  x.report("xpath('foo//bar///')") do
-    str = "foo//bar///"
-    MAX.times{ File.xpath(str) }
   end
 
   x.report("expand_path('~')") do
@@ -49,9 +30,43 @@ Benchmark.bm(30) do |x|
     MAX.times{ File.expand_path(str) }
   end
 
-  x.report("xpath('~')") do
+  x.report("expand_path('')") do
+    str = ""
+    MAX.times{ File.expand_path(str) }
+  end
+
+  x.report("expand_path('', '~')") do
+    MAX.times{ File.expand_path('', '~') }
+  end
+end
+
+require 'win32/xpath'
+puts "\nNew File.expand_path\n"
+
+Benchmark.bm(30) do |x|
+  x.report("expand_path('foo/bar')") do
+    str = "foo/bar"
+    MAX.times{ File.expand_path(str) }
+  end
+
+  x.report("expand_path('C:/foo/bar')") do
+    str = "C:/foo/bar"
+    MAX.times{ File.expand_path(str) }
+  end
+
+  x.report("expand_path('//foo/bar')") do
+    str = "//foo/bar"
+    MAX.times{ File.expand_path(str) }
+  end
+
+  x.report("expand_path('foo//bar///')") do
+    str = "foo//bar///"
+    MAX.times{ File.expand_path(str) }
+  end
+
+  x.report("expand_path('~')") do
     str = "~"
-    MAX.times{ File.xpath(str) }
+    MAX.times{ File.expand_path(str) }
   end
 
   x.report("expand_path('')") do
@@ -59,16 +74,7 @@ Benchmark.bm(30) do |x|
     MAX.times{ File.expand_path(str) }
   end
 
-  x.report("xpath('')") do
-    str = ""
-    MAX.times{ File.xpath(str) }
-  end
-
   x.report("expand_path('', '~')") do
     MAX.times{ File.expand_path('', '~') }
-  end
-
-  x.report("xpath('', '~')") do
-    MAX.times{ File.xpath('', '~') }
   end
 end
