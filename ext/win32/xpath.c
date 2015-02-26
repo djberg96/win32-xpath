@@ -95,20 +95,44 @@ wchar_t* expand_tilde(){
     size = GetEnvironmentVariableW(env, home, size);
   }
 
-  // If that still isn't found then raise an error
+  // If that isn't found the try HOMEDRIVE + HOMEPATH
   if(!size){
-    if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+    DWORD size2;
+    wchar_t* temp;
+    wchar_t* env2 = L"HOMEPATH";
+    env = L"HOMEDRIVE";
+
+    // If neither are found then raise an error
+    size =  GetEnvironmentVariableW(env, NULL, 0);
+    size2 = GetEnvironmentVariableW(env2, NULL, 0);
+
+    if(!size || !size2){
+      if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+        rb_sys_fail("GetEnvironmentVariable");
+      else
+        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+    }
+
+    home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
+    temp = (wchar_t*)ruby_xmalloc(MAX_WPATH);
+
+    if(!GetEnvironmentVariableW(env, home, size) || !GetEnvironmentVariableW(env2, temp, size2)){
+      ruby_xfree(home);
+      ruby_xfree(temp);
       rb_sys_fail("GetEnvironmentVariable");
-    else
-      rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
+    }
+
+    if(!PathAppendW(home, temp))
+      rb_sys_fail("PathAppend");
   }
+  else{
+    home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
+    size = GetEnvironmentVariableW(env, home, size);
 
-  home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
-  size = GetEnvironmentVariableW(env, home, size);
-
-  if(!size){
-    ruby_xfree(home);
-    rb_sys_fail("GetEnvironmentVariable");
+    if(!size){
+      ruby_xfree(home);
+      rb_sys_fail("GetEnvironmentVariable");
+    }
   }
 
   while(wcsstr(home, L"/"))
@@ -197,6 +221,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     dir_encoding = rb_enc_get(v_dir_orig);
 
+    // Hooray for encodings
     if (rb_enc_to_index(dir_encoding) == rb_utf8_encindex()){
       v_dir = rb_str_dup(v_dir_orig);
     }
@@ -206,6 +231,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_econv_close(ec);
     }
 
+    // Prep string for modification
     rb_str_modify_expand(v_dir, MAX_PATH);
 
     length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
