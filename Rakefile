@@ -31,6 +31,21 @@ task :build => [:clean] do
   end
 end
 
+namespace :gem do
+  desc "Build the win32-xpath gem"
+  task :create => [:clean] do
+    require 'rubygems/package'
+    spec = eval(IO.read('win32-xpath.gemspec'))
+    Gem::Package.build(spec)
+  end
+
+  task "Install the win32-xpath gem"
+  task :install => [:create] do
+    file = Dir["*.gem"].first
+    sh "gem install -l #{file}"
+  end
+end
+
 Rake::TestTask.new do |t|
   task :test => [:build]
   t.test_files = FileList['test/*']
