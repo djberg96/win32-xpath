@@ -1,0 +1,7 @@
+CHANGES
+ext/extconf.rb
+ext/win32/xpath.c
+Rakefile
+README
+test/test_win32_xpath.rb
+win32-xpath.gemspec
