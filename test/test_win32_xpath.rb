@@ -120,6 +120,7 @@ class Test_XPath < Test::Unit::TestCase
   test "raises ArgumentError when HOME is nil" do
     ENV['HOME'] = nil
     ENV['USERPROFILE'] = nil
+    ENV['HOMEDRIVE'] = nil
     assert_raise(ArgumentError){ File.expand_path('~') }
   end
 
