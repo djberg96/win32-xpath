@@ -5,6 +5,11 @@
 = Installation
   gem install win32-xpath
 
+= Synopsis
+  require 'win32/xpath'
+
+  # That's it, you are now using this library when you call File.expand_path
+
 = Features
   * A 5x average performance boost over MRI's current method.
   * Support for ~user expansion.
@@ -24,6 +29,26 @@
 
   If you discover any other issues, please report them on the project
   page at https://github.com/djberg96/win32-xpath.
+
+= Acknowledgements
+  Park Heesob for encoding advice and help.
+
+== License
+  Artistic 2.0
+
+== Contributions
+  Although this library is free, please consider having your company
+  setup a gittip if used by your company professionally.
+
+  http://www.gittip.com/djberg96/
+    
+== Copyright
+  (C) 2003-2015 Daniel J. Berger, All Rights Reserved
+    
+== Warranty
+  This package is provided "as is" and without any express or
+  implied warranties, including, without limitation, the implied
+  warranties of merchantability and fitness for a particular purpose.
 
 = Author
   Daniel Berger
