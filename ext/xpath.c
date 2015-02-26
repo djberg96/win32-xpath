@@ -18,7 +18,7 @@ wchar_t* find_user(wchar_t* str){
   wchar_t* lpData;
   wchar_t* dom;
   wchar_t* ptr;
-  wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
+  const wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
   // Read up until first backslash, and preserve the rest for later
   if (ptr = wcschr(str, L'\\')){
@@ -50,7 +50,8 @@ wchar_t* find_user(wchar_t* str){
   ruby_xfree(sid);
 
   // Mash the stringified SID onto our base key
-  swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid);
+  if(swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid) < 0)
+    rb_sys_fail("swprintf");
 
   // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
@@ -71,8 +72,10 @@ wchar_t* find_user(wchar_t* str){
   }
 
   // Append any remaining path data that was originally present
-  if (ptr)
-    swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr);
+  if (ptr){
+    if (swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr) < 0)
+      rb_sys_fail("swprintf");
+  }
   
   return lpData;
 }
