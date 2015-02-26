@@ -1,82 +1,29 @@
 = Description
-  A custom expand_path method for Ruby on Windows that doesn't suck.
+  A custom File.expand_path method for Ruby on Windows that's much
+  faster and works better.
 
-= The Plan
-  The initial implementation will use FFI as a prototype. Once that is
-  working and passing all tests, I will convert it to a C extension.
+= Installation
+  gem install win32-xpath
 
-= Things Making It Difficult
-  - The taint rules
-  - The $DATA handling
-  - Drive-current handling
-  - The '~' handling
+= Features
+  * A 5x average performance boost over MRI's current method.
+  * Support for ~user expansion.
 
-= Specifics On Tilde Handling on Windows
-  - A '~' by itself is expanded to ENV['HOME'].
-  - If the '~' is immediately followed by any non-path separator character
-    then it results in an ArgumentError.
-  - If the '~' is preceded by any character, it is treated literally.
-  - Any attempt to interpolate '~' if ENV['HOME'] isn't set will result in
-    an ArgumentError.
+= Known Issues
+  * This library does not support drive-current paths for the 2nd argument.
+  * This library does not support alt-stream name autocorrection.
 
-  In short, the '~' character on Windows, unlike Unix, does not allow for user
-  expansion. This could be made to work, though with some difficulty.
+  It is very unlikely you will ever be affected by either of these things.
+  Drive-current paths are a relic of DOS 1.0, but even so this library
+  will handle them in the first argument.
 
-  Personal thoughts: I've never liked tilde expansion in this method, even on
-  Unix, because it's SHELL behavior, not something the OS implements. I realize
-  the core developers were trying to be helpful, but here it's just a pain due
-  to parsing.
+  I don't support alt-stream mangling because I don't believe it's the
+  job of this method to peform autocorrection. Even in MRI it only works
+  for the default $DATA stream, and then only for a certain type of
+  syntax error. I do not know when or why it was added.
 
-= Specifics on $DATA Handling On Windows
-  - Specifically parses out and ignores "::$DATA" IO stream if found.
-  - Does not handle other mistakes in the io stream name.
-  - All other IO streams are treated literally.
+  If you discover any other issues, please report them on the project
+  page at https://github.com/djberg96/xpath.
 
-  In other words, it will ignore "::$DATA" but retain ":$DATA".
-
-  Personal thoughts: This is very peculiar. Why is this logic even in here?
-  Since when is Ruby in the business of autocorrecting paths? I can only guess
-  this was shoehorned in because some core developer got burned by a bad path
-  from some form data that delivered a virus onto his system, which seems to be
-  the primary usage of alt streams on Windows. But then why only handle the
-  default data stream and not others? Anyway, it's crap, and I have no 
-  intention of supporting this.
-
-= Specifics On Drive-Current Handling.
-
-  Drive-current paths, e.g. "C:foo" are basically a relic of DOS 1.0. You can
-  read all about them at:
-
-  http://blogs.msdn.com/b/oldnewthing/archive/2010/10/11/10073890.aspx
-
-  There's good news and bad news here. The good news is that GetFullPathName
-  will treat it as a relative path, and return the result you expect. The bad
-  news is that the PathIsRelative function does NOT consider a path like
-  C:foo to be relative, and this creates some problems. In practice, this only
-  matters in cases where a user specifies both a drive-current path as the
-  first argument as well as a dir path for the second argument.
-
-  Personal thoughts: I think I can safely say that no one has ever used a
-  drive-current path in the second form because of this bug:
-
-  https://bugs.ruby-lang.org/issues/10858
-
-  That bug has existed since 1.9.0, which was released in 2007. If no one
-  noticed that for 8 years, then no one is using it. Given the relative pain
-  to parse out drive letters, I've chosen to ignore it. In addition, MRI isn't
-  even consistent, as it will treat the second argument as a relative path if
-  the drives are the same, but a root path is the drive letters are different.
-  Anyway, my code treats a drive-current path in the first form as a
-  relative path, which is consistent with MRI, and languages like Python. So
-  in the unlikely event you're using drive-current paths with this method, it
-  will still work as expected.
-
-= Specifics On Taint Checking
-
-  MRI returns a tainted string, unless the original path is unmodified. In
-  practice, that means any absolute path is returned untainted (assuming it
-  was untainted originally), while everything else returns a tainted string.
-
-  The trick is when you have an absolute path with trailing slashes. Since
-  MRI strips them off, you have to deal with that separately. That means some
-  sort of state tracking. While not horrible, it is a nuisance.
+= Author
+  Daniel Berger
