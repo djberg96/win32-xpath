@@ -39,7 +39,7 @@ end
 
 desc "Run benchmarks"
 task :bench => [:build] do
-  ruby "-Iext bench/bench_xpath.rb"
+  ruby "-Iext bench/bench_win32_xpath.rb"
 end
 
 task :default => :test
