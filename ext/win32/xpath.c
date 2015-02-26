@@ -330,5 +330,5 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 }
 
 void Init_xpath(){
-  rb_define_singleton_method(rb_cFile, "xpath", rb_xpath, -1);
+  rb_define_singleton_method(rb_cFile, "expand_path", rb_xpath, -1);
 }
