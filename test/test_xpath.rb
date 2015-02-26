@@ -1,10 +1,12 @@
 require 'test-unit'
 require 'tmpdir'
 require 'xpath'
+require 'etc'
 
 class Test_XPath < Test::Unit::TestCase
   def self.startup
     ENV['HOME'] ||= ENV['USERPROFILE']
+    @@login = Etc.getlogin
   end
 
   def setup
@@ -131,8 +133,13 @@ class Test_XPath < Test::Unit::TestCase
     assert_raise(ArgumentError){ File.xpath('~anything') }
   end
 
-  test "raises an ArgumentError if any username is supplied" do
+  test "raises an ArgumentError if a bogus username is supplied" do
     assert_raise(ArgumentError){ File.xpath('~anything') }
+  end
+
+  test "converts a tilde plus username as expected" do
+    assert_equal("C:/Users/#{@@login}", File.xpath("~#{@@login}"))
+    assert_equal("C:/Users/#{@@login}/foo", File.xpath("~#{@@login}/foo"))
   end
 
   test "raises a TypeError if not passed a string" do
@@ -165,5 +172,9 @@ class Test_XPath < Test::Unit::TestCase
     @drive = nil
 
     ENV['HOME'] = @home
+  end
+
+  def self.shutdown
+    @@login = nil
   end
 end
