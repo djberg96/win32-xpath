@@ -6,6 +6,12 @@
 
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
 
+// Equivalent to raise SystemCallError.new(string, errnum)
+void rb_raise_syserr(const char* msg, int errnum){
+  VALUE v_sys = rb_funcall(rb_eSystemCallError, rb_intern("new"), 2, rb_str_new2(msg), INT2FIX(errnum));
+  rb_funcall(rb_mKernel, rb_intern("raise"), 1, v_sys);
+}
+
 // Helper function to find user's home directory
 wchar_t* find_user(wchar_t* str){
   SID* sid;
@@ -39,25 +45,25 @@ wchar_t* find_user(wchar_t* str){
     rb_raise(rb_eArgError, "can't find user %ls", str);
   }
 
-  ruby_xfree(dom);
+  ruby_xfree(dom); // Don't need this any more
     
   // Get the stringy version of the SID
   if (!ConvertSidToStringSidW(sid, &str_sid)){
     ruby_xfree(sid);
-    rb_raise(rb_eSystemCallError, "ConvertSidToStringSid", GetLastError());
+    rb_raise_syserr("ConvertSidToStringSid", GetLastError());
   }
 
-  ruby_xfree(sid);
+  ruby_xfree(sid); // Don't need this any more
 
   // Mash the stringified SID onto our base key
   if(swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid) < 0)
-    rb_raise(rb_eSystemCallError, "swprintf", GetLastError());
+    rb_raise_syserr("swprintf", GetLastError());
 
   // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
 
   if (rv != ERROR_SUCCESS)
-    rb_raise(rb_eSystemCallError, "RegOpenKeyEx", GetLastError());
+    rb_raise_syserr("RegOpenKeyEx", GetLastError());
 
   lpData = (wchar_t*)malloc(MAX_WPATH);
   cbData = MAX_WPATH;
@@ -68,13 +74,13 @@ wchar_t* find_user(wchar_t* str){
 
   if (rv != ERROR_SUCCESS){
     ruby_xfree(lpData);
-    rb_raise(rb_eArgError, "can't find user %ls", str);
+    rb_raise(rb_eArgError, "can't find home directory for user %ls", str);
   }
 
   // Append any remaining path data that was originally present
   if (ptr){
     if (swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr) < 0)
-      rb_raise(rb_eSystemCallError, "swprintf", GetLastError());
+      rb_raise_syserr("swprintf", GetLastError());
   }
   
   return lpData;
@@ -108,7 +114,7 @@ wchar_t* expand_tilde(){
 
     if(!size || !size2){
       if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
-        rb_raise(rb_eSystemCallError, "GetEnvironmentVariable", GetLastError());
+        rb_raise_syserr("GetEnvironmentVariable", GetLastError());
       else
         rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
     }
@@ -119,11 +125,11 @@ wchar_t* expand_tilde(){
     if(!GetEnvironmentVariableW(env, home, size) || !GetEnvironmentVariableW(env2, temp, size2)){
       ruby_xfree(home);
       ruby_xfree(temp);
-      rb_raise(rb_eSystemCallError, "GetEnvironmentVariable", GetLastError());
+      rb_raise_syserr("GetEnvironmentVariable", GetLastError());
     }
 
     if(!PathAppendW(home, temp))
-      rb_raise(rb_eSystemCallError, "PathAppend", GetLastError());
+      rb_raise_syserr("PathAppend", GetLastError());
   }
   else{
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
@@ -131,7 +137,7 @@ wchar_t* expand_tilde(){
 
     if(!size){
       ruby_xfree(home);
-      rb_raise(rb_eSystemCallError, "GetEnvironmentVariable", GetLastError());
+      rb_raise_syserr("GetEnvironmentVariable", GetLastError());
     }
   }
 
@@ -186,7 +192,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length)){
     ruby_xfree(path);
-    rb_raise(rb_eSystemCallError, "MultibyteToWideChar", GetLastError());
+    rb_raise_syserr("MultibyteToWideChar", GetLastError());
   }
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
@@ -206,7 +212,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       if (!PathAppendW(home, ++ptr)){
         ruby_xfree(home);
-        rb_raise(rb_eSystemCallError, "PathAppend", GetLastError());
+        rb_raise_syserr("PathAppend", GetLastError());
       }
     }
 
@@ -239,7 +245,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     if (!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
       ruby_xfree(dir);
-      rb_raise(rb_eSystemCallError, "MultibyteToWideChar", GetLastError());
+      rb_raise_syserr("MultibyteToWideChar", GetLastError());
     }
 
     while (wcsstr(dir, L"/"))
@@ -254,7 +260,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
         if (!PathAppendW(dir, ++ptr)){
           ruby_xfree(dir);
-          rb_raise(rb_eSystemCallError, "PathAppend", GetLastError());
+          rb_raise_syserr("PathAppend", GetLastError());
         }
       }
     }
@@ -265,7 +271,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     if (PathIsRelativeW(path)){ 
       if(!PathAppendW(dir, path)){
         ruby_xfree(dir);
-        rb_raise(rb_eSystemCallError, "PathAppend", GetLastError());
+        rb_raise_syserr("PathAppend", GetLastError());
       }
 
       // Remove leading slashes from relative paths
@@ -288,7 +294,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       if(!length){
         ruby_xfree(wpwd);
-        rb_raise(rb_eSystemCallError, "GetCurrentDirectory", GetLastError());
+        rb_raise_syserr("GetCurrentDirectory", GetLastError());
       }
 
       // Convert backslashes into forward slashes
@@ -302,7 +308,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       if (!length){
         ruby_xfree(pwd);
-        rb_raise(rb_eSystemCallError, "WideCharToMultiByte", GetLastError());
+        rb_raise_syserr("WideCharToMultiByte", GetLastError());
       }
 
       return rb_str_new2(pwd);
@@ -321,7 +327,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   if (!length){
     ruby_xfree(buffer);
-    rb_raise(rb_eSystemCallError, "GetFullPathName", GetLastError());
+    rb_raise_syserr("GetFullPathName", GetLastError());
   }
 
   // Convert backslashes into forward slashes
@@ -336,7 +342,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   if (!length){
     ruby_xfree(final_path);
-    rb_raise(rb_eSystemCallError, "WideCharToMultiByte", GetLastError());
+    rb_raise_syserr("WideCharToMultiByte", GetLastError());
   }
 
   v_path = rb_str_new(final_path, length - 1); // Don't count null terminator
