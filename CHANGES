@@ -1,2 +1,5 @@
+= 1.0.1 - 2-Apr-2015
+* Altered internal handling of native C function failures.
+
 = 1.0.0 - 26-Feb-2015
-  * Initial release
+* Initial release
