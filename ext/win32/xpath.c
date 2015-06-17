@@ -4,6 +4,10 @@
 #include <shlwapi.h>
 #include <sddl.h>
 
+#ifdef __MINGW32__
+#define swprintf _snwprintf 
+#endif
+
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
 
 // Equivalent to raise SystemCallError.new(string, errnum)
@@ -20,7 +24,7 @@ wchar_t* find_user(wchar_t* str){
   LPWSTR str_sid;
   LONG rv;
   HKEY phkResult;
-  wchar_t subkey[MAX_PATH];
+  wchar_t subkey[MAX_WPATH];
   wchar_t* lpData;
   wchar_t* dom;
   wchar_t* ptr;
@@ -56,7 +60,7 @@ wchar_t* find_user(wchar_t* str){
   ruby_xfree(sid); // Don't need this any more
 
   // Mash the stringified SID onto our base key
-  if(swprintf(subkey, MAX_PATH, L"%s%s", key_base, str_sid) < 0)
+  if(swprintf(subkey, MAX_WPATH, L"%s%s", key_base, str_sid) < 0)
     rb_raise_syserr("swprintf", GetLastError());
 
   // Get the key handle we need
@@ -105,7 +109,7 @@ wchar_t* expand_tilde(){
   if(!size){
     DWORD size2;
     wchar_t* temp;
-    wchar_t* env2 = L"HOMEPATH";
+    const wchar_t* env2 = L"HOMEPATH";
     env = L"HOMEDRIVE";
 
     // If neither are found then raise an error
