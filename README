@@ -30,6 +30,13 @@
   If you discover any other issues, please report them on the project
   page at https://github.com/djberg96/win32-xpath.
 
+= Mingw and Devkit
+  Make sure you have a recent version of the Devkit installed if you're
+  using the one-click installer. If you see this warning then you need
+  to upgrade your Devkit.
+
+  "implicit declaration of function 'ConvertSidToStringSidW'"
+
 = Acknowledgements
   Park Heesob for encoding advice and help.
 
