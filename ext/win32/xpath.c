@@ -8,11 +8,15 @@
 #define swprintf _snwprintf 
 #endif
 
+#ifdef HAVE_PATHCCH_H
+#include <pathcch.h>
+#endif
+
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
 
 // Equivalent to raise SystemCallError.new(string, errnum)
-void rb_raise_syserr(const char* msg, int errnum){
-  VALUE v_sys = rb_funcall(rb_eSystemCallError, rb_intern("new"), 2, rb_str_new2(msg), INT2FIX(errnum));
+void rb_raise_syserr(const char* msg, DWORD errnum){
+  VALUE v_sys = rb_funcall(rb_eSystemCallError, rb_intern("new"), 2, rb_str_new2(msg), LONG2FIX(errnum));
   rb_funcall(rb_mKernel, rb_intern("raise"), 1, v_sys);
 }
 
