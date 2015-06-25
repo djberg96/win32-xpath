@@ -98,6 +98,7 @@ class Test_XPath < Test::Unit::TestCase
   test "converts a pathname to an absolute pathname using tilde as base" do
     assert_equal(@home, File.expand_path('~'))
     assert_equal("#{@home}/foo", File.expand_path('~/foo'))
+    assert_equal("#{@home}/.foo", File.expand_path('~/.foo'))
   end
 
   test "converts a pathname to an absolute pathname using tilde for UNC path" do
