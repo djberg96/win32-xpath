@@ -169,6 +169,13 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal("#{@pwd}/Ελλάσ", File.expand_path("Ελλάσ"))
   end
 
+  # The +1 below is for the slash trailing @pwd that's appended.
+  test "handles paths longer than 260 (MAX_PATH) characters" do
+    assert_nothing_raised{ File.expand_path("a" * 261) }
+    assert_nothing_raised{ File.expand_path("a" * 1024) }
+    assert_equal(@pwd.size + 1024 + 1, File.expand_path("a" * 1024).size)
+  end
+
   def teardown
     @pwd = nil
     @unc = nil
