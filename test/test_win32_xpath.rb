@@ -118,6 +118,14 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal("~/a", str)
   end
 
+  test "defaults to HOMEDRIVE + HOMEPATH if HOME or USERPROFILE are nil" do
+    ENV['HOME'] = nil
+    ENV['USERPROFILE'] = nil
+    ENV['HOMEDRIVE'] = "C:"
+    ENV['HOMEPATH'] = "\\Users\\foo"
+    assert_equal("C:/Users/foo/bar", File.expand_path("~/bar"))
+  end
+
   test "raises ArgumentError when HOME is nil" do
     ENV['HOME'] = nil
     ENV['USERPROFILE'] = nil
@@ -168,6 +176,18 @@ class Test_XPath < Test::Unit::TestCase
 
   test "works with unicode characters" do
     assert_equal("#{@pwd}/Ελλάσ", File.expand_path("Ελλάσ"))
+  end
+
+  # The +1 below is for the slash trailing @pwd that's appended.
+  test "handles paths longer than 260 (MAX_PATH) characters" do
+    assert_nothing_raised{ File.expand_path("a" * 261) }
+    assert_nothing_raised{ File.expand_path("a" * 1024) }
+    assert_equal(@pwd.size + 1024 + 1, File.expand_path("a" * 1024).size)
+  end
+
+  test "handles very long paths with tilde" do
+    path = "a * 1024"
+    assert_nothing_raised{ File.expand_path("~/#{path}") }
   end
 
   def teardown

@@ -196,7 +196,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   // Make our path a wide string for later functions
   length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
-  path = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+  path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
   if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length)){
     ruby_xfree(path);
