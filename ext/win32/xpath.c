@@ -216,12 +216,26 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       home = find_user(++ptr);
     }
     else{
+#ifdef HAVE_PATHCCHAPPENDEX
+      HRESULT result;
+      wchar_t buffer[PATHCCH_MAX_CCH];
+
+      wcscpy_s(buffer, PATHCCH_MAX_CCH, expand_tilde(path));
+      
+      result = PathCchAppendEx(buffer, MAX_PATH, ++ptr, PATHCCH_ALLOW_LONG_PATHS);
+
+      if (result != S_OK)
+        rb_raise_syserr("PathCchAppend", result);
+
+      home = &buffer[0];
+#else
       home = expand_tilde(path);
 
       if (!PathAppendW(home, ++ptr)){
         ruby_xfree(home);
         rb_raise_syserr("PathAppend", GetLastError());
       }
+#endif
     }
 
     path = home;
