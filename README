@@ -27,6 +27,10 @@
   for the default $DATA stream, and then only for a certain type of
   syntax error. I do not know when or why it was added.
 
+  One possible "real" issue is that on Windows 7 or earlier you will be
+  limited to 260 character paths. This is a limitation of the shlwapi.h
+  functions that I use internally.
+
   If you discover any other issues, please report them on the project
   page at https://github.com/djberg96/win32-xpath.
 
