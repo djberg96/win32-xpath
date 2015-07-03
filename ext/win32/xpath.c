@@ -94,7 +94,11 @@ wchar_t* find_user(wchar_t* str){
   return lpData;
 }
 
-// Helper function to expand tilde into full path
+/* Helper function to expand tilde into full path. Note that I don't use the
+ * PathCchXXX functions here because it's extremely unlikely that a person's
+ * home directory exceeds MAX_PATH. In the unlikely even that it does exceed
+ * MAX_PATH, an error will be raised.
+ */
 wchar_t* expand_tilde(){
   DWORD size = 0;
   wchar_t* home = NULL;
@@ -158,7 +162,15 @@ wchar_t* expand_tilde(){
   return home;
 }
 
-// My version of File.expand_path
+/*
+ * File.expand_path(path, dir = nil)
+ *
+ * Converts +path+ to an absolute path.
+ *
+ * This is a custom version of the File.expand_path method for Windows
+ * that is much faster than the MRI core method. It also supports "~user"
+ * expansion on Windows while the MRI core method does not.
+ */
 static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   VALUE v_path, v_path_orig, v_dir_orig;
   wchar_t* buffer = NULL;
