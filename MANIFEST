@@ -1,5 +1,6 @@
 bench/bench_win32_xpath.rb
 CHANGES
+certs/djberg96_pub.pem
 ext/extconf.rb
 ext/win32/xpath.c
 futzing/futz.rb
