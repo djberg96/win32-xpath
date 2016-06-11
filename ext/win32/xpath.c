@@ -10,9 +10,10 @@
 
 #ifdef HAVE_PATHCCH_H
 #include <pathcch.h>
-#endif
-
+#define MAX_WPATH PATHCCH_MAX_CCH
+#else
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
+#endif
 
 // Equivalent to raise SystemCallError.new(string, errnum)
 void rb_raise_syserr(const char* msg, DWORD errnum){
@@ -204,7 +205,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     rb_econv_close(ec);
   }
   
-  rb_str_modify_expand(v_path, MAX_PATH);
+  rb_str_modify_expand(v_path, MAX_WPATH);
 
   // Make our path a wide string for later functions
   length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
@@ -234,7 +235,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
       wcscpy_s(buffer, PATHCCH_MAX_CCH, expand_tilde(path));
       
-      result = PathCchAppendEx(buffer, MAX_PATH, ++ptr, PATHCCH_ALLOW_LONG_PATHS);
+      result = PathCchAppendEx(buffer, MAX_WPATH, ++ptr, PATHCCH_ALLOW_LONG_PATHS);
 
       if (result != S_OK)
         rb_raise_syserr("PathCchAppend", result);
@@ -272,10 +273,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     }
 
     // Prep string for modification
-    rb_str_modify_expand(v_dir, MAX_PATH);
+    rb_str_modify_expand(v_dir, MAX_WPATH);
 
     length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
-    dir = (wchar_t*)ruby_xmalloc(MAX_PATH * sizeof(wchar_t));
+    dir = (wchar_t*)ruby_xmalloc(MAX_WPATH * sizeof(wchar_t));
 
     if (!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
       ruby_xfree(dir);
