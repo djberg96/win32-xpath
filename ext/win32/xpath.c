@@ -350,7 +350,11 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   }
 
   // Strip all trailing backslashes
+#ifdef HAVE_PATHCCH_H
+  while (PathCchRemoveBackslash(path, wcslen(path)+1) == S_OK);
+#else
   while (!*PathRemoveBackslashW(path));
+#endif
 
   // First call, get the length
   length = GetFullPathNameW(path, 0, buffer, NULL);
