@@ -65,6 +65,12 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(File.join(@root, 'foo.rb'), File.expand_path("#{@root}foo.rb/"))
   end
 
+  test "removes trailing slashes from relative path" do
+    assert_equal(File.join(@pwd, 'foo'), File.expand_path("foo/"))
+    assert_equal(File.join(@pwd, 'foo'), File.expand_path("foo//"))
+    assert_equal(File.join(@pwd, 'foo'), File.expand_path("foo\\\\\\"))
+  end
+
   test "removes trailing spaces from absolute path" do
     assert_equal(File.join(@root, 'foo'), File.expand_path("#{@root}foo  "))
   end
