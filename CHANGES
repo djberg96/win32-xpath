@@ -1,3 +1,9 @@
+= 1.0.5 - 11-Jun-2016
+* Use PathCchXXX functions wherever I could that had not already been
+  put into place.
+* Removed the "futzing" directory and contents.
+* Added an appveyor.yml file.
+
 = 1.0.4 - 26-Nov-2015
 * This gem is now signed.
 
