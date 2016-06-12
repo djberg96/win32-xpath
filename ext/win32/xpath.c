@@ -149,7 +149,7 @@ wchar_t* expand_tilde(){
     if(hr != S_OK){
       ruby_xfree(home);
       ruby_xfree(temp);
-      rb_raise_syserr("PathCchAppendEx", GetLastError());
+      rb_raise_syserr("PathCchAppendEx", hr);
     }
 #else
     if(!PathAppendW(home, temp)){
@@ -272,6 +272,9 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     wchar_t* dir;
     VALUE v_dir;
     rb_encoding* dir_encoding;
+#ifdef HAVE_PATHCCH_H
+    HRESULT hr;
+#endif
 
     dir_encoding = rb_enc_get(v_dir_orig);
 
@@ -306,10 +309,19 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       else{
         dir = expand_tilde();
 
+#ifdef HAVE_PATHCCH_H
+        hr = PathCchAppendEx(dir, MAX_WPATH, ++ptr, 1);
+
+        if(hr != S_OK){
+          ruby_xfree(dir);
+          rb_raise_syserr("PathCchAppendEx", hr);
+        }
+#else
         if (!PathAppendW(dir, ++ptr)){
           ruby_xfree(dir);
           rb_raise_syserr("PathAppend", GetLastError());
         }
+#endif
       }
     }
 
@@ -317,10 +329,20 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       path = dir;
 
     if (PathIsRelativeW(path)){ 
+
+#ifdef HAVE_PATHCCH_H
+      hr = PathCchAppendEx(dir, MAX_WPATH, path, 1);
+
+      if(hr != S_OK){
+        ruby_xfree(dir);
+        rb_raise_syserr("PathCchAppendEx", hr);
+      }
+#else
       if(!PathAppendW(dir, path)){
         ruby_xfree(dir);
         rb_raise_syserr("PathAppend", GetLastError());
       }
+#endif
 
       // Remove leading slashes from relative paths
       if (dir[0] == L'\\')
