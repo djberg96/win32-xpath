@@ -120,6 +120,9 @@ wchar_t* expand_tilde(){
     wchar_t* temp;
     const wchar_t* env2 = L"HOMEPATH";
     env = L"HOMEDRIVE";
+#ifdef HAVE_PATHCCH_H
+    HRESULT hr;
+#endif
 
     // If neither are found then raise an error
     size =  GetEnvironmentVariableW(env, NULL, 0);
@@ -141,8 +144,20 @@ wchar_t* expand_tilde(){
       rb_raise_syserr("GetEnvironmentVariable", GetLastError());
     }
 
-    if(!PathAppendW(home, temp))
+#ifdef HAVE_PATHCCH_H
+    hr = PathCchAppendEx(home, MAX_WPATH, temp, 1);
+    if(hr != S_OK){
+      ruby_xfree(home);
+      ruby_xfree(temp);
+      rb_raise_syserr("PathCchAppendEx", GetLastError());
+    }
+#else
+    if(!PathAppendW(home, temp)){
+      ruby_xfree(home);
+      ruby_xfree(temp);
       rb_raise_syserr("PathAppend", GetLastError());
+    }
+#endif
   }
   else{
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
