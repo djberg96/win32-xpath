@@ -1,4 +1,5 @@
-= 1.0.5 - 11-Jun-2016
+= 1.1.0 - 11-Jun-2016
+* Changed license to Apache 2.0.
 * Use PathCchXXX functions wherever I could that had not already been
   put into place.
 * Removed the "futzing" directory and contents.
