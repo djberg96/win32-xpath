@@ -230,17 +230,15 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     }
     else{
 #ifdef HAVE_PATHCCHAPPENDEX
-      HRESULT result;
-      wchar_t buffer[PATHCCH_MAX_CCH];
+      HRESULT hr;
+      home = expand_tilde(path);
 
-      wcscpy_s(buffer, PATHCCH_MAX_CCH, expand_tilde(path));
-      
-      result = PathCchAppendEx(buffer, MAX_WPATH, ++ptr, PATHCCH_ALLOW_LONG_PATHS);
+      hr = PathCchAppendEx(home, MAX_WPATH, ++ptr, 1);
 
-      if (result != S_OK)
-        rb_raise_syserr("PathCchAppend", result);
-
-      home = &buffer[0];
+      if(hr != S_OK){
+        ruby_xfree(home);
+        rb_raise_syserr("PathCchAppendEx", hr);
+      }
 #else
       home = expand_tilde(path);
 
