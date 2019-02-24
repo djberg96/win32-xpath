@@ -12,6 +12,8 @@ environment:
     ruby_dir: 2.3.0
   - ruby_version: 24-x64
     ruby_dir: 2.4.0
+  - ruby_version: 25-x64
+    ruby_dir: 2.5.0
 install:
 - ps: >-
     $env:path = "C:\Ruby" + $env:ruby_version + "\bin;" + $env:path
@@ -27,6 +29,7 @@ cache:
 - C:\Ruby22-x64\lib\ruby\gems\2.2.0
 - C:\Ruby23-x64\lib\ruby\gems\2.3.0
 - C:\Ruby24-x64\lib\ruby\gems\2.4.0
+- C:\Ruby25-x64\lib\ruby\gems\2.5.0
 build: off
 test_script:
 - cmd: rake
