@@ -201,7 +201,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
 
   if (rb_respond_to(v_path_orig, rb_intern("to_path")))
-    v_path_orig = rb_funcall(v_path_orig, rb_intern("to_path"), 0, NULL);
+    v_path_orig = rb_funcall2(v_path_orig, rb_intern("to_path"), 0, NULL);
 
   SafeStringValue(v_path_orig);
 
