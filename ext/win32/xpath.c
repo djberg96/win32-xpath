@@ -223,10 +223,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   rb_str_modify_expand(v_path, MAX_WPATH);
 
   // Make our path a wide string for later functions
-  length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
+  length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, NULL, 0);
   path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
-  if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length)){
+  if(!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, path, length)){
     ruby_xfree(path);
     rb_raise_syserr("MultibyteToWideChar", GetLastError());
   }
@@ -291,10 +291,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     // Prep string for modification
     rb_str_modify_expand(v_dir, MAX_WPATH);
 
-    length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
+    length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_dir), -1, NULL, 0);
     dir = (wchar_t*)ruby_xmalloc(MAX_WPATH * sizeof(wchar_t));
 
-    if (!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
+    if (!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_dir), -1, dir, length)){
       ruby_xfree(dir);
       rb_raise_syserr("MultibyteToWideChar", GetLastError());
     }
