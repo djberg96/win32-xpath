@@ -4,6 +4,7 @@ CHANGES
 certs/djberg96_pub.pem
 ext/extconf.rb
 ext/win32/xpath.c
+lib/win32-xpath.rb
 Rakefile
 README
 test/test_win32_xpath.rb
