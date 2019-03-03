@@ -11,7 +11,7 @@ class Test_XPath < Test::Unit::TestCase
 
   def setup
     @pwd = Dir.pwd
-    @tmp = Dir.tmpdir
+    @tmp = 'C:/Temp'
     @root =  'C:/'
     @drive = ENV['HOMEDRIVE']
     @home = ENV['HOME'].tr('\\', '/')
@@ -116,6 +116,11 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal(@home, File.expand_path('', '~'))
     assert_equal("#{@home}/foo", File.expand_path('', '~/foo'))
     assert_equal("#{@home}/foo", File.expand_path('foo', '~'))
+  end
+
+  test "doesn't attempt to expand a tilde unless it's the first character" do
+    assert_equal("C:/Progra~1", File.expand_path("C:/Progra~1"))
+    assert_equal("C:/Progra~1", File.expand_path("C:/Progra~1", "C:/Progra~1"))
   end
 
   test "does not modify a HOME string argument" do

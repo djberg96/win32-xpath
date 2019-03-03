@@ -235,8 +235,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   while(wcsstr(path, L"/"))
     path[wcscspn(path, L"/")] = L'\\';
 
-  // Handle ~ expansion.
-  if (ptr = wcschr(path, L'~')){
+  // Handle ~ expansion if first character.
+  if ( (ptr = wcschr(path, L'~')) && ((int)(ptr - path) == 0) ){
     wchar_t* home;
 
     // Handle both ~/user and ~user syntax
@@ -302,7 +302,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     while (wcsstr(dir, L"/"))
       dir[wcscspn(dir, L"/")] = L'\\';
 
-    if (ptr = wcschr(dir, L'~')){
+    // Check for tilde in first character
+    if ( (ptr = wcschr(dir, L'~')) && ((int)(ptr - dir) == 0) ){
       if (ptr[1] && ptr[1] != L'\\'){
         dir = find_user(++ptr);
       }
