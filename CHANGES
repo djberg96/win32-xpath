@@ -6,6 +6,7 @@
   Now tildes are only expanded if they are the first character in the path.
 * Updated the cert.
 * Updated the appveyor file to include Ruby 2.3, 2.4 and 2.5.
+* Added a win32-xpath.rb file for convenience.
 
 = 1.1.0 - 11-Jun-2016
 * Changed license to Apache 2.0.
