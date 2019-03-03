@@ -17,8 +17,9 @@
 = Known Issues
   * This library does not support drive-current paths for the 2nd argument.
   * This library does not support alt-stream name autocorrection.
+  * This library does not convert short paths to long paths.
 
-  It is very unlikely you will ever be affected by either of these things.
+  It is very unlikely you will ever be affected by any of these things.
   Drive-current paths are a relic of DOS 1.0, but even so this library
   will handle them in the first argument.
 
@@ -26,6 +27,9 @@
   job of this method to peform autocorrection. Even in MRI it only works
   for the default $DATA stream, and then only for a certain type of
   syntax error. I do not know when or why it was added.
+
+  Failure to convert short paths to long paths is irrelevant since that
+  has nothing to do with relative versus absolute paths.
 
   One possible "real" issue is that on Windows 7 or earlier you will be
   limited to 260 character paths. This is a limitation of the shlwapi.h
@@ -48,7 +52,7 @@
   Apache 2.0
 
 == Copyright
-  (C) 2003-2016 Daniel J. Berger, All Rights Reserved
+  (C) 2003-2019 Daniel J. Berger, All Rights Reserved
     
 == Warranty
   This package is provided "as is" and without any express or
