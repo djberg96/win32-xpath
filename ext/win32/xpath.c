@@ -201,7 +201,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
 
   if (rb_respond_to(v_path_orig, rb_intern("to_path")))
-    v_path_orig = rb_funcall(v_path_orig, rb_intern("to_path"), 0, NULL);
+    v_path_orig = rb_funcall2(v_path_orig, rb_intern("to_path"), 0, NULL);
 
   SafeStringValue(v_path_orig);
 
@@ -223,10 +223,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   rb_str_modify_expand(v_path, MAX_WPATH);
 
   // Make our path a wide string for later functions
-  length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, NULL, 0);
+  length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, NULL, 0);
   path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
-  if(!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_path), -1, path, length)){
+  if(!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, path, length)){
     ruby_xfree(path);
     rb_raise_syserr("MultibyteToWideChar", GetLastError());
   }
@@ -235,8 +235,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   while(wcsstr(path, L"/"))
     path[wcscspn(path, L"/")] = L'\\';
 
-  // Handle ~ expansion.
-  if (ptr = wcschr(path, L'~')){
+  // Handle ~ expansion if first character.
+  if ( (ptr = wcschr(path, L'~')) && ((int)(ptr - path) == 0) ){
     wchar_t* home;
 
     // Handle both ~/user and ~user syntax
@@ -291,10 +291,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     // Prep string for modification
     rb_str_modify_expand(v_dir, MAX_WPATH);
 
-    length = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, NULL, 0);
+    length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_dir), -1, NULL, 0);
     dir = (wchar_t*)ruby_xmalloc(MAX_WPATH * sizeof(wchar_t));
 
-    if (!MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(v_dir), -1, dir, length)){
+    if (!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_dir), -1, dir, length)){
       ruby_xfree(dir);
       rb_raise_syserr("MultibyteToWideChar", GetLastError());
     }
@@ -302,7 +302,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     while (wcsstr(dir, L"/"))
       dir[wcscspn(dir, L"/")] = L'\\';
 
-    if (ptr = wcschr(dir, L'~')){
+    // Check for tilde in first character
+    if ( (ptr = wcschr(dir, L'~')) && ((int)(ptr - dir) == 0) ){
       if (ptr[1] && ptr[1] != L'\\'){
         dir = find_user(++ptr);
       }
