@@ -7,6 +7,7 @@ include RbConfig
 CLEAN.include(
   '**/*.gem',               # Gem files
   '**/*.rbc',               # Rubinius
+  '**/*.lock',              # Bundler
   '**/*.o',                 # C object file
   '**/*.log',               # Ruby extension build log
   '**/Makefile',            # C Makefile
