@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
 
   spec.extensions = ['ext/extconf.rb']
   spec.add_development_dependency('rake')
-  spec.add_development_dependency('test-unit', '~> 3.5')
+  spec.add_development_dependency('test-unit', '~> 3.4')
 
   spec.description = <<-EOF
     The win32-xpath library provides a revamped File.expand_path method
