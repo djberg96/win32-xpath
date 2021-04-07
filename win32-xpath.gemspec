@@ -4,7 +4,7 @@ Gem::Specification.new do |spec|
   spec.name       = 'win32-xpath'
   spec.version    = '1.1.1'
   spec.author     = 'Daniel J. Berger'
-  spec.license    = 'Apache 2.0'
+  spec.license    = 'Apache-2.0'
   spec.email      = 'djberg96@gmail.com'
   spec.homepage   = 'http://github.com/djberg96/win32-xpath'
   spec.summary    = 'Revamped File.expand_path for Windows'
@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
 
   spec.extensions = ['ext/extconf.rb']
   spec.add_development_dependency('rake')
-  spec.add_development_dependency('test-unit', '>= 3.0.0')
+  spec.add_development_dependency('test-unit', '~> 3.5')
 
   spec.description = <<-EOF
     The win32-xpath library provides a revamped File.expand_path method
