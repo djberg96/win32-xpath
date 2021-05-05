@@ -16,6 +16,15 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency('rake')
   spec.add_development_dependency('test-unit', '~> 3.4')
 
+  spec.metadata = {
+    'homepage_uri'      => 'https://github.com/djberg96/win32-xpath',
+    'bug_tracker_uri'   => 'https://github.com/djberg96/win32-xpath/issues',
+    'changelog_uri'     => 'https://github.com/djberg96/win32-xpath/blob/main/CHANGES.md',
+    'documentation_uri' => 'https://github.com/djberg96/win32-xpath/wiki',
+    'source_code_uri'   => 'https://github.com/djberg96/win32-xpath',
+    'wiki_uri'          => 'https://github.com/djberg96/win32-xpath/wiki'
+  }
+
   spec.description = <<-EOF
     The win32-xpath library provides a revamped File.expand_path method
     for MS Windows. It is significantly faster, and supports ~user
