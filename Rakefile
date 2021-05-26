@@ -1,7 +1,7 @@
 require 'rake'
 require 'rake/clean'
-require 'rake/testtask'
 require 'rbconfig'
+require 'rspec/core/rake_task'
 include RbConfig
 
 CLEAN.include(
@@ -48,15 +48,14 @@ namespace :gem do
   end
 end
 
-Rake::TestTask.new do |t|
-  task :test => [:build]
-  t.test_files = FileList['test/*']
-  t.libs << 'ext'
-end
-
 desc "Run benchmarks"
 task :bench => [:build] do
   ruby "-Iext bench/bench_win32_xpath.rb"
 end
 
-task :default => :test
+desc "Run the test suite"
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.rspec_opts = '-Iext'
+end
+
+task :default => [:build, :spec]
