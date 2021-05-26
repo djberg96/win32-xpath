@@ -6,9 +6,8 @@ require 'etc'
 RSpec.describe 'win32-xpath' do  
   let(:login) { Etc.getlogin }
 
-  before(:context) do
-    ENV['HOME'] ||= ENV['USERPROFILE']
-  end
+  #before(:context) do
+  #end
 
   before do
     @pwd = Dir.pwd
@@ -17,6 +16,7 @@ RSpec.describe 'win32-xpath' do
     @drive = ENV['HOMEDRIVE']
     @home = ENV['HOME'].tr('\\', '/')
     @unc = "//foo/bar"
+    ENV['HOME'] = ENV['USERPROFILE'] || Dir.home
   end
 
   example "converts an empty pathname into absolute current pathname" do
@@ -149,19 +149,20 @@ RSpec.describe 'win32-xpath' do
     ENV['HOME'] = '.'
     expect{ File.expand_path('~') }.to raise_error(ArgumentError)
   end
+=end 
 
-  example "raises ArgumentError if relative user is provided" do
-    ENV['HOME'] = '.'
-    expect{ File.expand_path('~anything') }.to raise_error(ArgumentError)
-  end
+  #example "raises ArgumentError if relative home dir with tilde is provided" do
+  #  ENV['HOME'] = 'whatever'
+  #  expect(File.expand_path("~#{login}")).to eq('foo')
+  #end
 
   example "raises an ArgumentError if a bogus username is supplied" do
     expect{ File.expand_path('~anything') }.to raise_error(ArgumentError)
   end
 
   example "converts a tilde plus username as expected" do
-    expect( File.expand_path("~#{@@login}")).to eq("C:/Users/#{@@login}")
-    expect( File.expand_path("~#{@@login}/foo")).to eq("C:/Users/#{@@login}/foo")
+    expect(File.expand_path("~#{login}")).to eq("C:/Users/#{login}")
+    expect(File.expand_path("~#{login}/foo")).to eq("C:/Users/#{login}/foo")
   end
 
   example "raises a TypeError if not passed a string" do
@@ -171,15 +172,14 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "canonicalizes absolute path" do
-    expect( File.expand_path("C:/./dir")).to eq("C:/dir")
+    expect(File.expand_path("C:/./dir")).to eq("C:/dir")
   end
 
   example "does not modify its argument" do
     str = "./a/b/../c"
-    expect( @home)).to eq("#{@home}/a/c", File.expand_path(str)
-    expect( str).to eq("./a/b/../c")
+    expect(File.expand_path(str, @home)).to eq("#{@home}/a/c")
+    expect(str).to eq("./a/b/../c")
   end
-=end
 
   example "accepts objects that have a to_path method" do
     klass = Class.new{ def to_path; "a/b/c"; end }
