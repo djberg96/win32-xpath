@@ -27,37 +27,36 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('.')).to eq(@pwd)
   end
 
-  example "converts 'foo' into absolute pathname using current directory" do
+  example "converts relative path into absolute pathname using current directory" do
     expect(File.expand_path('foo')).to eq(File.join(@pwd, 'foo'))
   end
 
-  example "converts 'foo' into absolute pathname ignoring nil dir" do
+  example "converts relative path into absolute pathname ignoring nil dir" do
     expect(File.expand_path('foo', nil)).to eq(File.join(@pwd, 'foo'))
   end
 
-  example "converts 'foo' and 'bar' into absolute pathname" do
+  example "converts relative path and directory into the expected absolute pathname" do
     expect(File.expand_path('foo', 'bar')).to eq(File.join(@pwd, 'bar', 'foo'))
   end
 
-=begin
-  example "converts a pathname into absolute pathname" do
-    expect( File.expand_path('a.')).to eq(File.join(@pwd, 'a'))
-    expect( File.expand_path('.a')).to eq(File.join(@pwd, '.a'))
-    expect( File.expand_path('..a')).to eq(File.join(@pwd, '..a'))
-    expect( File.expand_path('a../b')).to eq(File.join(@pwd, 'a../b'))
+  example "converts relative edge case pathnames into absolute pathnames" do
+    expect(File.expand_path('a.')).to eq(File.join(@pwd, 'a'))
+    expect(File.expand_path('.a')).to eq(File.join(@pwd, '.a'))
+    expect(File.expand_path('..a')).to eq(File.join(@pwd, '..a'))
+    expect(File.expand_path('a../b')).to eq(File.join(@pwd, 'a../b'))
   end
 
-  example "converts a pathname and make it valid" do
+  example "converts a double dot pathname into the expected absolute pathname" do
     expect( File.expand_path('a..')).to eq(File.join(@pwd, 'a'))
   end
 
   example "converts a pathname to an absolute pathname using a complete path" do
-    expect( @tmp)).to eq(@tmp, File.expand_path('')
-    expect( @tmp)).to eq(File.join(@tmp, 'a'), File.expand_path('a')
-    expect( "#{@tmp}/xxx")).to eq(File.join(@tmp, 'a'), File.expand_path('../a')
-    expect( @root)).to eq(@root, File.expand_path('.')
+    #expect(@tmp)).to eq(File.join(@tmp, 'a'), File.expand_path('a')
+    #expect("#{@tmp}/xxx")).to eq(File.join(@tmp, 'a'), File.expand_path('../a')
+    #expect(@root)).to eq(@root, File.expand_path('.')
   end
 
+=begin
   example "ignores supplied dir if path contains a drive letter" do
     expect( "D:/")).to eq(@root, File.expand_path(@root)
   end
@@ -180,11 +179,12 @@ RSpec.describe 'win32-xpath' do
     expect( @home)).to eq("#{@home}/a/c", File.expand_path(str)
     expect( str).to eq("./a/b/../c")
   end
+=end
 
   example "accepts objects that have a to_path method" do
     klass = Class.new{ def to_path; "a/b/c"; end }
     obj = klass.new
-    expect( File.expand_path(obj)).to eq("#{@pwd}/a/b/c")
+    expect(File.expand_path(obj)).to eq("#{@pwd}/a/b/c")
   end
 
   example "works with unicode characters" do
@@ -195,12 +195,11 @@ RSpec.describe 'win32-xpath' do
   example "handles paths longer than 260 (MAX_PATH) characters" do
     expect{ File.expand_path("a" * 261) }.not_to raise_error
     expect{ File.expand_path("a" * 1024) }.not_to raise_error
-    expect( File.expand_path("a" * 1024).size).to eq(@pwd.size + 1024 + 1)
+    expect(File.expand_path("a" * 1024).size).to eq(@pwd.size + 1024 + 1)
   end
 
   example "handles very long paths with tilde" do
     path = "a * 1024"
-    expect{ File.expand_path("~/#{path}.not_to raise_error") }
+    expect{ File.expand_path("~/#{path}") }.not_to raise_error
   end
-=end
 end
