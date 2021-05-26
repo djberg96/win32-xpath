@@ -38,7 +38,7 @@ namespace :gem do
     require 'rubygems/package'
     spec = Gem::Specification.load('win32-xpath.gemspec')
     spec.signing_key = File.join(Dir.home, '.ssh', 'gem-private_key.pem')
-    Gem::Package.build(spec, true)
+    Gem::Package.build(spec)
   end
 
   task "Install the win32-xpath gem"
