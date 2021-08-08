@@ -92,6 +92,7 @@ class Test_XPath < Test::Unit::TestCase
   end
 
   test "returns tainted strings or not" do
+    omit_if(RUBY_VERSION.to_f >= 2.7, "skipping taint checks on Ruby 2.7+")
     assert_true(File.expand_path('foo').tainted?)
     assert_true(File.expand_path('foo'.taint).tainted?)
     assert_true(File.expand_path('/foo').tainted?)
