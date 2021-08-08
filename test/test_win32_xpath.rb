@@ -92,6 +92,7 @@ class Test_XPath < Test::Unit::TestCase
   end
 
   test "returns tainted strings or not" do
+    omit_if(RUBY_VERSION.to_f >= 2.7, "skipping taint checks on Ruby 2.7+")
     assert_true(File.expand_path('foo').tainted?)
     assert_true(File.expand_path('foo'.taint).tainted?)
     assert_true(File.expand_path('/foo').tainted?)
@@ -179,10 +180,16 @@ class Test_XPath < Test::Unit::TestCase
     assert_equal("./a/b/../c", str)
   end
 
-  test "accepts objects that have a to_path method" do
+  test "accepts objects that have a to_path method for main argument" do
     klass = Class.new{ def to_path; "a/b/c"; end }
     obj = klass.new
     assert_equal("#{@pwd}/a/b/c", File.expand_path(obj))
+  end
+
+  test "accepts objects that have a to_path method for relative dir argument" do
+    klass = Class.new{ def to_path; "bar"; end }
+    obj = klass.new
+    assert_equal("#{@pwd}/bar/foo", File.expand_path('foo', obj))
   end
 
   test "works with unicode characters" do
