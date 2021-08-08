@@ -205,8 +205,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   SafeStringValue(v_path_orig);
 
-  if (!NIL_P(v_dir_orig))
+  if (!NIL_P(v_dir_orig)){
+    if (rb_respond_to(v_dir_orig, rb_intern("to_path")))
+      v_dir_orig = rb_funcall2(v_dir_orig, rb_intern("to_path"), 0, NULL);
+
     SafeStringValue(v_dir_orig);
+  }
 
   // Dup and prep string for modification
   path_encoding = rb_enc_get(v_path_orig);
