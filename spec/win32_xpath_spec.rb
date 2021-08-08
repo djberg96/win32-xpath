@@ -77,20 +77,20 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path("#{@root}a.")).to eq(File.join(@root, 'a'))
   end
 
-=begin
   example "converts a pathname with a drive letter but no slash" do
-    expect( File.expand_path("c:")).to match(/\Ac:\//i)
+    expect(File.expand_path("c:")).to match(/\Ac:\//i)
   end
 
   example "converts a pathname with a drive letter ignoring different drive dir" do
-    expect( "d:/bar")).to match(/\Ac:\//i, File.expand_path("c:foo")
+    expect(File.expand_path("c:foo", "d:/bar")).to match(/\Ac:\//i)
   end
 
   example "converts a pathname which starts with a slash using current drive" do
-    expect( File.expand_path('/foo')).to match(/\A#{@drive}\/foo\z/i)
+    expect(File.expand_path('/foo')).to match(/\A#{@drive}\/foo\z/i)
   end
 
   example "returns tainted strings or not" do
+    skip "Skipping on Ruby 2.7+" if RUBY_VERSION.to_f >= 2.7
     expect(File.expand_path('foo').tainted?).to be true
     expect(File.expand_path('foo'.taint).tainted?).to be true
     expect(File.expand_path('/foo').tainted?).to be true
@@ -101,11 +101,12 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "converts a pathname to an absolute pathname using tilde as base" do
-    expect( File.expand_path('~')).to eq(@home)
-    expect( File.expand_path('~/foo')).to eq("#{@home}/foo")
-    expect( File.expand_path('~/.foo')).to eq("#{@home}/.foo")
+    expect(File.expand_path('~')).to eq(@home)
+    expect(File.expand_path('~/foo')).to eq("#{@home}/foo")
+    expect(File.expand_path('~/.foo')).to eq("#{@home}/.foo")
   end
 
+=begin
   example "converts a pathname to an absolute pathname using tilde for UNC path" do
     ENV['HOME'] = @unc
     expect( File.expand_path('~')).to eq(@unc)
