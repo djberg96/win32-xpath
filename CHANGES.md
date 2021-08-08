@@ -1,3 +1,9 @@
+## 1.1.2 - 8-Aug-2021
+* The relative path directory argument now accepts anything that responds
+  to the to_path method.
+* Now skips taint checking tests on Ruby 2.7+
+* Added a .gitignore file.
+
 ## 1.1.1 - 3-Mar-2019
 * Switched RSTRING_PTR to StringValueCStr internally because apparently I
   I didn't get the memo on null termination changes.
