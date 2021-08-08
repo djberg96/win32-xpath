@@ -1,0 +1,6 @@
+Gemfile.lock
+*.o
+*.so
+*.def
+*.log
+Makefile
