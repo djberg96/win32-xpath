@@ -6,9 +6,6 @@ require 'etc'
 RSpec.describe 'win32-xpath' do  
   let(:login) { Etc.getlogin }
 
-  #before(:context) do
-  #end
-
   before do
     @pwd = Dir.pwd
     @tmp = 'C:/Temp'
@@ -51,35 +48,36 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "converts a pathname to an absolute pathname using a complete path" do
-    #expect(@tmp)).to eq(File.join(@tmp, 'a'), File.expand_path('a')
-    #expect("#{@tmp}/xxx")).to eq(File.join(@tmp, 'a'), File.expand_path('../a')
-    #expect(@root)).to eq(@root, File.expand_path('.')
+    expect(File.expand_path('', @tmp)).to eq(@tmp)
+    expect(File.expand_path('a', @tmp)).to eq(File.join(@tmp, 'a'))
+    expect(File.expand_path('../a', "#{@tmp}/xxx")).to eq(File.join(@tmp, 'a'))
+    expect(File.expand_path('.', @root)).to eq(@root)
   end
 
-=begin
   example "ignores supplied dir if path contains a drive letter" do
-    expect( "D:/")).to eq(@root, File.expand_path(@root)
+    expect(File.expand_path(@root, "D:/")).to eq(@root)
   end
 
   example "removes trailing slashes from absolute path" do
-    expect( File.expand_path("#{@root}foo/")).to eq(File.join(@root, 'foo'))
-    expect( File.expand_path("#{@root}foo.rb/")).to eq(File.join(@root, 'foo.rb'))
+    expect(File.expand_path("#{@root}foo/")).to eq(File.join(@root, 'foo'))
+    expect(File.expand_path("#{@root}foo.rb/")).to eq(File.join(@root, 'foo.rb'))
   end
 
   example "removes trailing slashes from relative path" do
-    expect( File.expand_path("foo/")).to eq(File.join(@pwd, 'foo'))
-    expect( File.expand_path("foo//")).to eq(File.join(@pwd, 'foo'))
-    expect( File.expand_path("foo\\\\\\")).to eq(File.join(@pwd, 'foo'))
+    expect(File.expand_path("foo/")).to eq(File.join(@pwd, 'foo'))
+    expect(File.expand_path("foo//")).to eq(File.join(@pwd, 'foo'))
+    expect(File.expand_path("foo\\\\\\")).to eq(File.join(@pwd, 'foo'))
   end
 
   example "removes trailing spaces from absolute path" do
-    expect( File.expand_path("#{@root}foo  ")).to eq(File.join(@root, 'foo'))
+    expect(File.expand_path("#{@root}foo  ")).to eq(File.join(@root, 'foo'))
   end
 
   example "removes trailing dots from absolute path" do
-    expect( File.expand_path("#{@root}a.")).to eq(File.join(@root, 'a'))
+    expect(File.expand_path("#{@root}a.")).to eq(File.join(@root, 'a'))
   end
 
+=begin
   example "converts a pathname with a drive letter but no slash" do
     expect( File.expand_path("c:")).to match(/\Ac:\//i)
   end
