@@ -53,7 +53,7 @@ Park Heesob for encoding advice and help.
 Apache-2.0
 
 ## Copyright
-(C) 2003-2019 Daniel J. Berger, All Rights Reserved
+(C) 2003-2021 Daniel J. Berger, All Rights Reserved
     
 ## Warranty
 This package is provided "as is" and without any express or
