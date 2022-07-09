@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.email      = 'djberg96@gmail.com'
   spec.homepage   = 'http://github.com/djberg96/win32-xpath'
   spec.summary    = 'Revamped File.expand_path for Windows'
-  spec.test_file  = 'test/test_win32_xpath.rb'
+  spec.test_file  = 'spec/win32_xpath_spec.rb'
   spec.files      = Dir['**/*'].reject{ |f| f.include?('git') }
   spec.cert_chain = Dir['certs/*']
 
@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
     'documentation_uri'     => 'https://github.com/djberg96/win32-xpath/wiki',
     'source_code_uri'       => 'https://github.com/djberg96/win32-xpath',
     'wiki_uri'              => 'https://github.com/djberg96/win32-xpath/wiki',
-    'rubygems_mfa_required' => true
+    'rubygems_mfa_required' => 'true'
   }
 
   spec.description = <<-EOF
