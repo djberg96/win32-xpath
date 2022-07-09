@@ -4,6 +4,9 @@ A custom `File.expand_path` method for Ruby on Windows that's much faster and wo
 ## Installation
 `gem install win32-xpath`
 
+## Adding the Trusted Cert
+`gem cert --add <(curl -Ls https://raw.githubusercontent.com/djberg96/win32-xpath/main/certs/djberg96_pub.pem)`
+
 ## Synopsis
 ```ruby
 require 'win32/xpath'
@@ -53,7 +56,7 @@ Park Heesob for encoding advice and help.
 Apache-2.0
 
 ## Copyright
-(C) 2003-2021 Daniel J. Berger, All Rights Reserved
+(C) 2003-2022 Daniel J. Berger, All Rights Reserved
     
 ## Warranty
 This package is provided "as is" and without any express or
