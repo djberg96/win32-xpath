@@ -106,52 +106,50 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('~/.foo')).to eq("#{@home}/.foo")
   end
 
-=begin
-  example "converts a pathname to an absolute pathname using tilde for UNC path" do
-    ENV['HOME'] = @unc
-    expect( File.expand_path('~')).to eq(@unc)
-  end
+  #example "converts a pathname to an absolute pathname using tilde for UNC path" do
+  #  allow(ENV).to receive(:[]).with('HOME').and_return(@unc)
+  #  expect(File.expand_path('~')).to eq(@unc)
+  #end
 
   example "converts a tilde to path if used for dir argument" do
-    expect( '~')).to eq(@home, File.expand_path('')
-    expect( '~/foo')).to eq("#{@home}/foo", File.expand_path('')
-    expect( '~')).to eq("#{@home}/foo", File.expand_path('foo')
+    expect(File.expand_path('', '~')).to eq(@home)
+    expect(File.expand_path('', '~/foo')).to eq("#{@home}/foo")
+    expect(File.expand_path('foo', '~')).to eq("#{@home}/foo")
   end
 
   example "doesn't attempt to expand a tilde unless it's the first character" do
-    expect( File.expand_path("C:/Progra~1")).to eq("C:/Progra~1")
-    expect( "C:/Progra~1")).to eq("C:/Progra~1", File.expand_path("C:/Progra~1")
+    expect(File.expand_path("C:/Progra~1")).to eq("C:/Progra~1")
+    expect(File.expand_path("C:/Progra~1", "C:/Progra~1")).to eq("C:/Progra~1")
   end
 
   example "does not modify a HOME string argument" do
     str = "~/a"
-    expect( File.expand_path(str)).to eq("#{@home}/a")
-    expect( str).to eq("~/a")
+    expect(File.expand_path(str)).to eq("#{@home}/a")
+    expect(str).to eq("~/a")
   end
 
-  example "defaults to HOMEDRIVE + HOMEPATH if HOME or USERPROFILE are nil" do
-    ENV['HOME'] = nil
-    ENV['USERPROFILE'] = nil
-    ENV['HOMEDRIVE'] = "C:"
-    ENV['HOMEPATH'] = "\\Users\\foo"
-    expect( File.expand_path("~/bar")).to eq("C:/Users/foo/bar")
-  end
+  #example "defaults to HOMEDRIVE + HOMEPATH if HOME or USERPROFILE are nil" do
+  #  allow(ENV).to receive(:[]).with('HOME').and_return(nil)
+  #  allow(ENV).to receive(:[]).with('USERPROFILE').and_return(nil)
+  #  allow(ENV).to receive(:[]).with('HOMEDRIVE').and_return("C:")
+  #  allow(ENV).to receive(:[]).with('HOMEPATH').and_return("\\Users\\foo")
+  #  expect(File.expand_path("~/bar")).to eq("C:/Users/foo/bar")
+  #end
 
-  example "raises ArgumentError when HOME is nil" do
-    ENV['HOME'] = nil
-    ENV['USERPROFILE'] = nil
-    ENV['HOMEDRIVE'] = nil
-    expect{ File.expand_path('~') }.to raise_error(ArgumentError)
-  end
+  #example "raises ArgumentError when HOME is nil" do
+  #  allow(ENV).to receive(:[]).with('HOME').and_return(nil)
+  #  allow(ENV).to receive(:[]).with('USERPROFILE').and_return(nil)
+  #  allow(ENV).to receive(:[]).with('HOMEDRIVE').and_return(nil)
+  #  expect{ File.expand_path('~') }.to raise_error(ArgumentError)
+  #end
 
-  example "raises ArgumentError if HOME is relative" do
-    ENV['HOME'] = '.'
-    expect{ File.expand_path('~') }.to raise_error(ArgumentError)
-  end
-=end 
+  #example "raises ArgumentError if HOME is relative" do
+  #  allow(ENV).to receive(:[]).with('HOME').and_return('.')
+  #  expect{ File.expand_path('~') }.to raise_error(ArgumentError)
+  #end
 
   #example "raises ArgumentError if relative home dir with tilde is provided" do
-  #  ENV['HOME'] = 'whatever'
+  #  allow(ENV).to receive(:[]).with('HOME').and_return('whatever')
   #  expect(File.expand_path("~#{login}")).to eq('foo')
   #end
 
