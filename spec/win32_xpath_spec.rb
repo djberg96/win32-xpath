@@ -189,6 +189,12 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path(obj)).to eq("#{@pwd}/a/b/c")
   end
 
+  example "accepts objects that have a to_path method for relative dir argument" do
+    klass = Class.new{ def to_path; "bar"; end }
+    obj = klass.new
+    expect(File.expand_path('foo', obj)).to eq("#{@pwd}/bar/foo")
+  end
+
   example "works with unicode characters" do
     expect( File.expand_path("Ελλάσ")).to eq("#{@pwd}/Ελλάσ")
   end
