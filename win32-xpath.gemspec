@@ -2,7 +2,7 @@ require 'rubygems'
 
 Gem::Specification.new do |spec|
   spec.name       = 'win32-xpath'
-  spec.version    = '1.1.2'
+  spec.version    = '1.2.0'
   spec.author     = 'Daniel J. Berger'
   spec.license    = 'Apache-2.0'
   spec.email      = 'djberg96@gmail.com'
@@ -14,15 +14,16 @@ Gem::Specification.new do |spec|
 
   spec.extensions = ['ext/extconf.rb']
   spec.add_development_dependency('rake')
-  spec.add_development_dependency('test-unit', '~> 3.4')
+  spec.add_development_dependency('rspec', '~> 3.11')
 
   spec.metadata = {
-    'homepage_uri'      => 'https://github.com/djberg96/win32-xpath',
-    'bug_tracker_uri'   => 'https://github.com/djberg96/win32-xpath/issues',
-    'changelog_uri'     => 'https://github.com/djberg96/win32-xpath/blob/main/CHANGES.md',
-    'documentation_uri' => 'https://github.com/djberg96/win32-xpath/wiki',
-    'source_code_uri'   => 'https://github.com/djberg96/win32-xpath',
-    'wiki_uri'          => 'https://github.com/djberg96/win32-xpath/wiki'
+    'homepage_uri'          => 'https://github.com/djberg96/win32-xpath',
+    'bug_tracker_uri'       => 'https://github.com/djberg96/win32-xpath/issues',
+    'changelog_uri'         => 'https://github.com/djberg96/win32-xpath/blob/main/CHANGES.md',
+    'documentation_uri'     => 'https://github.com/djberg96/win32-xpath/wiki',
+    'source_code_uri'       => 'https://github.com/djberg96/win32-xpath',
+    'wiki_uri'              => 'https://github.com/djberg96/win32-xpath/wiki',
+    'rubygems_mfa_required' => true
   }
 
   spec.description = <<-EOF
