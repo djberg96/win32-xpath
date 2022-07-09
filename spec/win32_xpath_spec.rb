@@ -4,16 +4,21 @@ require 'win32/xpath'
 require 'etc'
 
 RSpec.describe 'win32-xpath' do  
-  let(:login) { Etc.getlogin }
+  let!(:login) { Etc.getlogin }
+  let!(:env){ ENV.to_h }
 
   before do
     @pwd = Dir.pwd
     @tmp = 'C:/Temp'
     @root =  'C:/'
-    @drive = ENV['HOMEDRIVE']
-    @home = ENV['HOME'].tr('\\', '/')
+    @drive = env['HOMEDRIVE']
+    @home = env['HOME'].tr('\\', '/')
     @unc = "//foo/bar"
-    ENV['HOME'] = ENV['USERPROFILE'] || Dir.home
+    ENV['HOME'] = env['USERPROFILE'] || Dir.home
+  end
+
+  after do
+    ENV.replace(env)
   end
 
   example "converts an empty pathname into absolute current pathname" do
@@ -106,10 +111,10 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('~/.foo')).to eq("#{@home}/.foo")
   end
 
-  #example "converts a pathname to an absolute pathname using tilde for UNC path" do
-  #  allow(ENV).to receive(:[]).with('HOME').and_return(@unc)
-  #  expect(File.expand_path('~')).to eq(@unc)
-  #end
+  example "converts a pathname to an absolute pathname using tilde for UNC path" do
+    ENV['HOME'] = @unc
+    expect(File.expand_path('~')).to eq(@unc)
+  end
 
   example "converts a tilde to path if used for dir argument" do
     expect(File.expand_path('', '~')).to eq(@home)
@@ -128,30 +133,30 @@ RSpec.describe 'win32-xpath' do
     expect(str).to eq("~/a")
   end
 
-  #example "defaults to HOMEDRIVE + HOMEPATH if HOME or USERPROFILE are nil" do
-  #  allow(ENV).to receive(:[]).with('HOME').and_return(nil)
-  #  allow(ENV).to receive(:[]).with('USERPROFILE').and_return(nil)
-  #  allow(ENV).to receive(:[]).with('HOMEDRIVE').and_return("C:")
-  #  allow(ENV).to receive(:[]).with('HOMEPATH').and_return("\\Users\\foo")
-  #  expect(File.expand_path("~/bar")).to eq("C:/Users/foo/bar")
-  #end
+  example "defaults to HOMEDRIVE + HOMEPATH if HOME or USERPROFILE are nil" do
+    ENV['HOME'] = nil  
+    ENV['USERPROFILE'] = nil
+    ENV['HOMEDRIVE'] = "C:"
+    ENV['HOMEPATH'] = "\\Users\\foo"
+    expect(File.expand_path("~/bar")).to eq("C:/Users/foo/bar")
+  end
 
-  #example "raises ArgumentError when HOME is nil" do
-  #  allow(ENV).to receive(:[]).with('HOME').and_return(nil)
-  #  allow(ENV).to receive(:[]).with('USERPROFILE').and_return(nil)
-  #  allow(ENV).to receive(:[]).with('HOMEDRIVE').and_return(nil)
-  #  expect{ File.expand_path('~') }.to raise_error(ArgumentError)
-  #end
+  example "raises ArgumentError when HOME is nil" do
+    ENV['HOME'] = nil
+    ENV['USERPROFILE'] = nil
+    ENV['HOMEDRIVE'] = nil
+    expect{ File.expand_path('~') }.to raise_error(ArgumentError)
+  end
 
-  #example "raises ArgumentError if HOME is relative" do
-  #  allow(ENV).to receive(:[]).with('HOME').and_return('.')
-  #  expect{ File.expand_path('~') }.to raise_error(ArgumentError)
-  #end
+  example "raises ArgumentError if HOME is relative" do
+    ENV['HOME'] = '.'
+    expect{ File.expand_path('~') }.to raise_error(ArgumentError)
+  end
 
-  #example "raises ArgumentError if relative home dir with tilde is provided" do
-  #  allow(ENV).to receive(:[]).with('HOME').and_return('whatever')
-  #  expect(File.expand_path("~#{login}")).to eq('foo')
-  #end
+  example "raises ArgumentError if relative home dir with tilde is provided" do
+    ENV['HOME'] = 'whatever'
+    expect(File.expand_path("~#{login}")).to eq('foo')
+  end
 
   example "raises an ArgumentError if a bogus username is supplied" do
     expect{ File.expand_path('~anything') }.to raise_error(ArgumentError)
