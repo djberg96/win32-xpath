@@ -1,3 +1,6 @@
+## 1.2.0 - 9-Jul-2022
+* Convert tests from test-unit to rspec, and update gemspec and Rakefile accordingly.
+
 ## 1.1.2 - 8-Aug-2021
 * The relative path directory argument now accepts anything that responds
   to the to_path method.
