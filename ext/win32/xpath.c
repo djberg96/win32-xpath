@@ -49,9 +49,22 @@ wchar_t* find_user(wchar_t* str){
 
   // Get the user's SID
   if (!LookupAccountNameW(NULL, str, sid, &cbSid, dom, &cbDom, &peUse)){
+    char* mstr;
+    DWORD length;
+
     ruby_xfree(sid);
     ruby_xfree(dom);
-    rb_raise(rb_eArgError, "can't find user %ls", str);
+
+    length = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
+    mstr = (char*)ruby_xmalloc(length);
+    length = WideCharToMultiByte(CP_UTF8, 0, str, -1, mstr, length, NULL, NULL);
+
+    if (!length){
+      ruby_xfree(str);
+      rb_raise_syserr("WideCharToMultiByte", GetLastError());
+    }
+
+    rb_raise(rb_eArgError, "can't find user '%ls'", mstr);
   }
 
   ruby_xfree(dom); // Don't need this any more

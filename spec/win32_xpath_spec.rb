@@ -159,7 +159,7 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "raises an ArgumentError if a bogus username is supplied" do
-    expect{ File.expand_path('~anything') }.to raise_error(ArgumentError)
+    expect{ File.expand_path('~anything') }.to raise_error(ArgumentError, "can't find user 'anything'")
   end
 
   example "converts a tilde plus username as expected" do
