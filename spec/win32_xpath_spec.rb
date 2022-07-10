@@ -11,7 +11,7 @@ RSpec.describe 'win32-xpath' do
     @pwd = Dir.pwd
     @tmp = 'C:/Temp'
     @root =  'C:/'
-    @drive = env['HOMEDRIVE']
+    @drive = Dir.pwd[0,2]
     @home = env['HOME'].tr('\\', '/')
     @unc = "//foo/bar"
     ENV['HOME'] = env['USERPROFILE'] || Dir.home
@@ -159,7 +159,11 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "raises an ArgumentError if a bogus username is supplied" do
-    expect{ File.expand_path('~anything') }.to raise_error(ArgumentError)
+    expect{ File.expand_path('~anything') }.to raise_error(ArgumentError, "can't find user 'anything'")
+  end
+
+  example "raises an ArgumentError if the account exists but does not have a home directory" do
+    expect{ File.expand_path('~Guest') }.to raise_error(Errno::ENOENT)
   end
 
   example "converts a tilde plus username as expected" do
