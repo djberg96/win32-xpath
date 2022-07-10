@@ -85,7 +85,7 @@ wchar_t* find_user(wchar_t* str){
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
 
   if (rv != ERROR_SUCCESS)
-    rb_raise_syserr("RegOpenKeyEx", GetLastError());
+    rb_raise_syserr("RegOpenKeyEx", rv);
 
   lpData = (wchar_t*)malloc(MAX_WPATH);
   cbData = MAX_WPATH;

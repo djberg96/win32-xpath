@@ -162,6 +162,10 @@ RSpec.describe 'win32-xpath' do
     expect{ File.expand_path('~anything') }.to raise_error(ArgumentError, "can't find user 'anything'")
   end
 
+  example "raises an ArgumentError if the account exists but does not have a home directory" do
+    expect{ File.expand_path('~Guest') }.to raise_error(Errno::ENOENT)
+  end
+
   example "converts a tilde plus username as expected" do
     expect(File.expand_path("~#{login}")).to eq("C:/Users/#{login}")
     expect(File.expand_path("~#{login}/foo")).to eq("C:/Users/#{login}/foo")
