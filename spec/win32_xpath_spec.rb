@@ -11,7 +11,7 @@ RSpec.describe 'win32-xpath' do
     @pwd = Dir.pwd
     @tmp = 'C:/Temp'
     @root =  'C:/'
-    @drive = env['HOMEDRIVE']
+    @drive = Dir.home[0,2]
     @home = env['HOME'].tr('\\', '/')
     @unc = "//foo/bar"
     ENV['HOME'] = env['USERPROFILE'] || Dir.home
