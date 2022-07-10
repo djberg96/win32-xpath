@@ -64,7 +64,7 @@ wchar_t* find_user(wchar_t* str){
       rb_raise_syserr("WideCharToMultiByte", GetLastError());
     }
 
-    rb_raise(rb_eArgError, "can't find user '%ls'", mstr);
+    rb_raise(rb_eArgError, "can't find user '%s'", mstr);
   }
 
   ruby_xfree(dom); // Don't need this any more
