@@ -1,4 +1,3 @@
-* appveyor.yml
 * bench/bench_win32_xpath.rb
 * CHANGES.md
 * certs/djberg96_pub.pem
@@ -10,5 +9,5 @@
 * MANIFEST.md
 * Rakefile
 * README.md
-* test/test_win32_xpath.rb
+* spec/win32_xpath_spec.rb
 * win32-xpath.gemspec
