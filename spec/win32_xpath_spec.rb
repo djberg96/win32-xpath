@@ -149,13 +149,13 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "raises ArgumentError if HOME is relative" do
-    ENV['HOME'] = '.'
+    ENV['HOME'] = 'whatever'
     expect{ File.expand_path('~') }.to raise_error(ArgumentError)
   end
 
-  example "raises ArgumentError if relative HOME path with tilde + user is provided" do
+  example "HOME is ignored if valid user is explicit" do
     ENV['HOME'] = 'whatever'
-    expect{ File.expand_path('~anything') }.to raise_error(ArgumentError)
+    expect(File.expand_path("~#{login}")).to eq(@home)
   end
 
   example "raises an ArgumentError if a bogus username is supplied" do
