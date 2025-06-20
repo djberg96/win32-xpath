@@ -400,6 +400,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       pwd = (char*)ruby_xmalloc(length);
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
 
+      ruby_xfree(wpwd);
+
       if (!length){
         ruby_xfree(pwd);
         rb_raise_syserr("WideCharToMultiByte", GetLastError());
