@@ -101,6 +101,8 @@ wchar_t* find_user(wchar_t* str){
   // Finally, get the user's home directory
   rv = RegQueryValueExW(phkResult, L"ProfileImagePath", NULL, &lpType, (LPBYTE)lpData, &cbData);
 
+  RegCloseKey(phkResult); // Close registry key once we're finished
+
   if (rv != ERROR_SUCCESS){
     ruby_xfree(lpData);
     rb_raise(rb_eArgError, "can't find home directory for user %ls", str);
