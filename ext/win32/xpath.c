@@ -119,11 +119,7 @@ wchar_t* find_user(wchar_t* str){
   return lpData;
 }
 
-/* Helper function to expand tilde into full path. Note that I don't use the
- * PathCchXXX functions here because it's extremely unlikely that a person's
- * home directory exceeds MAX_PATH. In the unlikely even that it does exceed
- * MAX_PATH, an error will be raised.
- */
+// Helper function to expand tilde into full path.
 wchar_t* expand_tilde(){
   DWORD size = 0;
   wchar_t* home = NULL;
@@ -238,6 +234,13 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     SafeStringValue(v_dir_orig);
   }
+
+  // Short circuit an empty first argument if there's no second argument.
+  if(NUM2LONG(rb_str_length(v_path_orig)) == 0){
+    if(NIL_P(v_dir_orig))
+      return rb_dir_getwd();
+  }
+
 
   // Dup and prep string for modification
   path_encoding = rb_enc_get(v_path_orig);
