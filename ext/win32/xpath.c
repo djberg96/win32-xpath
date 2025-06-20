@@ -36,15 +36,17 @@ wchar_t* find_user(wchar_t* str){
   const wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
   // Read up until first backslash, and preserve the rest for later
-  if (ptr = wcschr(str, L'\\')){
+  ptr = wcschr(str, L'\\');
+
+  if(ptr){
     ptr++;
     str[wcscspn(str, L"\\")] = 0;
   }
 
-  sid = (SID*)ruby_xmalloc(MAX_WPATH);
+  sid = (SID*)ruby_xmalloc(SECURITY_MAX_SID_SIZE);
   dom = (wchar_t*)ruby_xmalloc(MAX_WPATH);
 
-  cbSid = MAX_PATH;
+  cbSid = SECURITY_MAX_SID_SIZE;
   cbDom = MAX_PATH;
 
   // Get the user's SID
