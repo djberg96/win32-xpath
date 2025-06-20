@@ -161,6 +161,7 @@ wchar_t* expand_tilde(){
     }
 
 #ifdef HAVE_PATHCCH_H
+    // Skip reallocation, we're already at max size.
     hr = PathCchAppendEx(home, MAX_WPATH, temp, 1);
     if(hr != S_OK){
       ruby_xfree(home);
@@ -173,7 +174,9 @@ wchar_t* expand_tilde(){
       ruby_xfree(temp);
       rb_raise_syserr("PathAppend", GetLastError());
     }
+
 #endif
+    ruby_xfree(temp);
   }
   else{
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
