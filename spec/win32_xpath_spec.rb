@@ -3,7 +3,7 @@ require 'tmpdir'
 require 'win32/xpath'
 require 'etc'
 
-RSpec.describe 'win32-xpath' do  
+RSpec.describe 'win32-xpath' do
   let!(:login) { Etc.getlogin }
   let!(:env){ ENV.to_h }
 
@@ -94,17 +94,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('/foo')).to match(/\A#{@drive}\/foo\z/i)
   end
 
-  example "returns tainted strings or not" do
-    skip "Skipping on Ruby 2.7+" if RUBY_VERSION.to_f >= 2.7
-    expect(File.expand_path('foo').tainted?).to be true
-    expect(File.expand_path('foo'.taint).tainted?).to be true
-    expect(File.expand_path('/foo').tainted?).to be true
-    expect(File.expand_path('/foo'.taint).tainted?).to be true
-    expect(File.expand_path('C:/foo'.taint).tainted?).to be true
-    expect(File.expand_path('C:/foo').tainted?).to be false
-    expect(File.expand_path('//foo').tainted?).to be false
-  end
-
   example "converts a pathname to an absolute pathname using tilde as base" do
     expect(File.expand_path('~')).to eq(@home)
     expect(File.expand_path('~/foo')).to eq("#{@home}/foo")
@@ -134,7 +123,7 @@ RSpec.describe 'win32-xpath' do
   end
 
   example "defaults to HOMEDRIVE + HOMEPATH if HOME or USERPROFILE are nil" do
-    ENV['HOME'] = nil  
+    ENV['HOME'] = nil
     ENV['USERPROFILE'] = nil
     ENV['HOMEDRIVE'] = "C:"
     ENV['HOMEPATH'] = "\\Users\\foo"

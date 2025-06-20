@@ -263,7 +263,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     else{
 #ifdef HAVE_PATHCCHAPPENDEX
       HRESULT hr;
-      home = expand_tilde(path);
+      home = expand_tilde();
 
       hr = PathCchAppendEx(home, MAX_WPATH, ++ptr, 1);
 
@@ -272,7 +272,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
         rb_raise_syserr("PathCchAppendEx", hr);
       }
 #else
-      home = expand_tilde(path);
+      home = expand_tilde();
 
       if (!PathAppendW(home, ++ptr)){
         ruby_xfree(home);
@@ -447,9 +447,6 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
   rb_enc_associate(v_path, path_encoding);
   
-  if (OBJ_TAINTED(v_path_orig) || rb_equal(v_path, v_path_orig) == Qfalse)
-    OBJ_TAINT(v_path);
-
   return v_path;
 }
 
