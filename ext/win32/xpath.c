@@ -23,15 +23,15 @@ void rb_raise_syserr(const char* msg, DWORD errnum){
 
 // Helper function to find user's home directory
 wchar_t* find_user(wchar_t* str){
-  SID* sid;
+  SID* sid = NULL;
   DWORD cbSid, cbDom, cbData, lpType;
   SID_NAME_USE peUse;
-  LPWSTR str_sid;
+  LPWSTR str_sid = NULL;
   LONG rv;
-  HKEY phkResult;
+  HKEY phkResult = NULL;
   wchar_t subkey[MAX_WPATH];
-  wchar_t* lpData;
-  wchar_t* dom;
+  wchar_t* lpData = NULL;
+  wchar_t* dom = NULL;
   wchar_t* ptr;
   const wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
