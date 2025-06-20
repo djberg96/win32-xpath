@@ -110,8 +110,10 @@ wchar_t* find_user(wchar_t* str){
 
   // Append any remaining path data that was originally present
   if (ptr){
-    if (swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr) < 0)
+    if (swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr) < 0){
+      ruby_xfree(lpData);
       rb_raise_syserr("swprintf", GetLastError());
+    }
   }
   
   return lpData;
