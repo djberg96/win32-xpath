@@ -130,7 +130,7 @@ wchar_t* expand_tilde(){
   // If that isn't found then try USERPROFILE
   if(!size){
     env = L"USERPROFILE"; 
-    size = GetEnvironmentVariableW(env, home, 0);
+    size = GetEnvironmentVariableW(env, NULL, 0);
   }
 
   // If that isn't found the try HOMEDRIVE + HOMEPATH
