@@ -61,6 +61,7 @@ wchar_t* find_user(wchar_t* str){
 
     if (!length){
       ruby_xfree(str);
+      ruby_xfree(mstr);
       rb_raise_syserr("WideCharToMultiByte", GetLastError());
     }
 
