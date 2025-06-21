@@ -80,11 +80,11 @@ wchar_t* find_user(wchar_t* str){
 
   // Mash the stringified SID onto our base key
   if(swprintf(subkey, MAX_WPATH, L"%s%s", key_base, str_sid) < 0){
-    ruby_xfree(str_sid);
+    LocalFree(str_sid);
     rb_raise_syserr("swprintf", GetLastError());
   }
 
-  ruby_xfree(str_sid);
+  LocalFree(str_sid);
 
   // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
