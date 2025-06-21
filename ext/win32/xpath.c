@@ -93,6 +93,7 @@ wchar_t* find_user(wchar_t* str){
 
   // Finally, get the user's home directory
   rv = RegQueryValueExW(phkResult, L"ProfileImagePath", NULL, &lpType, (LPBYTE)lpData, &cbData);
+  RegCloseKey(phkResult);
 
   if (rv != ERROR_SUCCESS){
     ruby_xfree(lpData);
@@ -124,7 +125,7 @@ wchar_t* expand_tilde(){
   // If that isn't found then try USERPROFILE
   if(!size){
     env = L"USERPROFILE"; 
-    size = GetEnvironmentVariableW(env, home, size);
+    size = GetEnvironmentVariableW(env, home, 0);
   }
 
   // If that isn't found the try HOMEDRIVE + HOMEPATH
