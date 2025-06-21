@@ -23,20 +23,22 @@ void rb_raise_syserr(const char* msg, DWORD errnum){
 
 // Helper function to find user's home directory
 wchar_t* find_user(wchar_t* str){
-  SID* sid;
+  SID* sid = NULL;
   DWORD cbSid, cbDom, cbData, lpType;
   SID_NAME_USE peUse;
-  LPWSTR str_sid;
+  LPWSTR str_sid = NULL;
   LONG rv;
-  HKEY phkResult;
+  HKEY phkResult = NULL;
   wchar_t subkey[MAX_WPATH];
-  wchar_t* lpData;
-  wchar_t* dom;
+  wchar_t* lpData = NULL;
+  wchar_t* dom = NULL;
   wchar_t* ptr;
   const wchar_t* key_base = L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\";
 
   // Read up until first backslash, and preserve the rest for later
-  if (ptr = wcschr(str, L'\\')){
+  ptr = wcschr(str, L'\\');
+
+  if(ptr){
     ptr++;
     str[wcscspn(str, L"\\")] = 0;
   }
@@ -79,8 +81,12 @@ wchar_t* find_user(wchar_t* str){
   ruby_xfree(sid); // Don't need this any more
 
   // Mash the stringified SID onto our base key
-  if(swprintf(subkey, MAX_WPATH, L"%s%s", key_base, str_sid) < 0)
+  if(swprintf(subkey, MAX_WPATH, L"%s%s", key_base, str_sid) < 0){
+    ruby_xfree(str_sid);
     rb_raise_syserr("swprintf", GetLastError());
+  }
+
+  ruby_xfree(str_sid);
 
   // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
@@ -96,6 +102,8 @@ wchar_t* find_user(wchar_t* str){
   rv = RegQueryValueExW(phkResult, L"ProfileImagePath", NULL, &lpType, (LPBYTE)lpData, &cbData);
   RegCloseKey(phkResult);
 
+  RegCloseKey(phkResult); // Close registry key once we're finished
+
   if (rv != ERROR_SUCCESS){
     ruby_xfree(lpData);
     rb_raise(rb_eArgError, "can't find home directory for user %ls", str);
@@ -103,18 +111,16 @@ wchar_t* find_user(wchar_t* str){
 
   // Append any remaining path data that was originally present
   if (ptr){
-    if (swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr) < 0)
+    if (swprintf(lpData, MAX_WPATH, L"%s/%s", lpData, ptr) < 0){
+      ruby_xfree(lpData);
       rb_raise_syserr("swprintf", GetLastError());
+    }
   }
   
   return lpData;
 }
 
-/* Helper function to expand tilde into full path. Note that I don't use the
- * PathCchXXX functions here because it's extremely unlikely that a person's
- * home directory exceeds MAX_PATH. In the unlikely even that it does exceed
- * MAX_PATH, an error will be raised.
- */
+// Helper function to expand tilde into full path.
 wchar_t* expand_tilde(){
   DWORD size = 0;
   wchar_t* home = NULL;
@@ -160,6 +166,7 @@ wchar_t* expand_tilde(){
     }
 
 #ifdef HAVE_PATHCCH_H
+    // Skip reallocation, we're already at max size.
     hr = PathCchAppendEx(home, MAX_WPATH, temp, 1);
     if(hr != S_OK){
       ruby_xfree(home);
@@ -172,7 +179,9 @@ wchar_t* expand_tilde(){
       ruby_xfree(temp);
       rb_raise_syserr("PathAppend", GetLastError());
     }
+
 #endif
+    ruby_xfree(temp);
   }
   else{
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
@@ -226,6 +235,13 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
 
     SafeStringValue(v_dir_orig);
   }
+
+  // Short circuit an empty first argument if there's no second argument.
+  if(NUM2LONG(rb_str_length(v_path_orig)) == 0){
+    if(NIL_P(v_dir_orig))
+      return rb_dir_getwd();
+  }
+
 
   // Dup and prep string for modification
   path_encoding = rb_enc_get(v_path_orig);
@@ -395,6 +411,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, NULL, 0, NULL, NULL);
       pwd = (char*)ruby_xmalloc(length);
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
+
+      ruby_xfree(wpwd);
 
       if (!length){
         ruby_xfree(pwd);

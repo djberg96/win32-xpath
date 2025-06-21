@@ -24,6 +24,11 @@ Benchmark.bm(30) do |x|
     MAX.times{ File.expand_path(str) }
   end
 
+  x.report("expand_path('.')") do
+    str = "~"
+    MAX.times{ File.expand_path(str) }
+  end
+
   x.report("expand_path('~')") do
     str = "~"
     MAX.times{ File.expand_path(str) }
@@ -60,6 +65,11 @@ Benchmark.bm(30) do |x|
 
   x.report("expand_path('foo//bar///')") do
     str = "foo//bar///"
+    MAX.times{ File.expand_path(str) }
+  end
+
+  x.report("expand_path('.')") do
+    str = "~"
     MAX.times{ File.expand_path(str) }
   end
 
