@@ -41,10 +41,10 @@ wchar_t* find_user(wchar_t* str){
     str[wcscspn(str, L"\\")] = 0;
   }
 
-  sid = (SID*)ruby_xmalloc(MAX_WPATH);
+  sid = (SID*)ruby_xmalloc(SECURITY_MAX_SID_SIZE);
   dom = (wchar_t*)ruby_xmalloc(MAX_WPATH);
 
-  cbSid = MAX_PATH;
+  cbSid = SECURITY_MAX_SID_SIZE;
   cbDom = MAX_PATH;
 
   // Get the user's SID
