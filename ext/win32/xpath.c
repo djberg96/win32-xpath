@@ -130,7 +130,7 @@ wchar_t* expand_tilde(){
   // If that isn't found then try USERPROFILE
   if(!size){
     env = L"USERPROFILE"; 
-    size = GetEnvironmentVariableW(env, home, 0);
+    size = GetEnvironmentVariableW(env, NULL, 0);
   }
 
   // If that isn't found the try HOMEDRIVE + HOMEPATH
@@ -229,6 +229,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       v_dir_orig = rb_funcall2(v_dir_orig, rb_intern("to_path"), 0, NULL);
 
     SafeStringValue(v_dir_orig);
+  }
+
+  // Short circuit an empty first argument if there's no second argument.
+  if(NUM2LONG(rb_str_length(v_path_orig)) == 0){
+    if(NIL_P(v_dir_orig))
+      return rb_dir_getwd();
   }
 
   // Dup and prep string for modification
@@ -399,6 +405,8 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, NULL, 0, NULL, NULL);
       pwd = (char*)ruby_xmalloc(length);
       length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
+
+      ruby_xfree(wpwd);
 
       if (!length){
         ruby_xfree(pwd);
