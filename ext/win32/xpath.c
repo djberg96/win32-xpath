@@ -326,7 +326,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   }
 
   // Directory argument is present
-  if (!NIL_P(v_dir_orig)){
+  if (!NIL_P(v_dir_orig) && PathIsRelativeW(path)){
     wchar_t* dir;
     VALUE v_dir;
     rb_encoding* dir_encoding;
