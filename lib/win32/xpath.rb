@@ -15,12 +15,10 @@ class File
 
     buffer = FFI::MemoryPointer.new(MAX_PATH)
 
-    if path.empty?
-      if GetCurrentDirectory(buffer.size, buffer) == 0
-        raise SystemCallError.new('GetCurrentDirectory')
-      end
-      return formatted_windows_string(buffer)
-    end
+    return Dir.pwd if path.empty?
+    return ENV['HOME'].tr('\\', '/') if path == '~'
+
+    path.sub!('~', ENV['HOME']) if path.start_with?('~')
 
     if GetFullPathName(path, MAX_PATH, buffer, nil) == 0
       raise SystemCallError.new('GetFullPathName')

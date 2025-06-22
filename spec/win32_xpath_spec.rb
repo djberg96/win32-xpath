@@ -85,15 +85,16 @@ RSpec.describe 'win32-xpath' do
   example "removes trailing dots from absolute path" do
     expect(File.expand_path("#{@root}a.")).to eq(File.join(@root, 'a'))
   end
-=begin
 
   example "converts a pathname with a drive letter but no slash" do
     expect(File.expand_path("c:")).to match(/\Ac:\//i)
   end
 
+=begin
   example "converts a pathname with a drive letter ignoring different drive dir" do
     expect(File.expand_path("c:foo", "d:/bar")).to match(/\Ac:\//i)
   end
+=end
 
   example "converts a pathname which starts with a slash using current drive" do
     expect(File.expand_path('/foo')).to match(/\A#{@drive}\/foo\z/i)
@@ -109,6 +110,7 @@ RSpec.describe 'win32-xpath' do
     ENV['HOME'] = @unc
     expect(File.expand_path('~')).to eq(@unc)
   end
+=begin
 
   example "converts a tilde to path if used for dir argument" do
     expect(File.expand_path('', '~')).to eq(@home)
