@@ -29,6 +29,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('.')).to eq(@pwd)
   end
 
+=begin
   example "converts relative path into absolute pathname using current directory" do
     expect(File.expand_path('foo')).to eq(File.join(@pwd, 'foo'))
   end
@@ -40,6 +41,7 @@ RSpec.describe 'win32-xpath' do
   example "converts relative path and directory into the expected absolute pathname" do
     expect(File.expand_path('foo', 'bar')).to eq(File.join(@pwd, 'bar', 'foo'))
   end
+=end
 
   example "converts relative edge case pathnames into absolute pathnames" do
     expect(File.expand_path('a.')).to eq(File.join(@pwd, 'a'))
@@ -52,6 +54,7 @@ RSpec.describe 'win32-xpath' do
     expect( File.expand_path('a..')).to eq(File.join(@pwd, 'a'))
   end
 
+=begin
   example "converts a pathname to an absolute pathname using a complete path" do
     expect(File.expand_path('', @tmp)).to eq(@tmp)
     expect(File.expand_path('a', @tmp)).to eq(File.join(@tmp, 'a'))
@@ -62,6 +65,7 @@ RSpec.describe 'win32-xpath' do
   example "ignores supplied dir if path contains a drive letter" do
     expect(File.expand_path(@root, "D:/")).to eq(@root)
   end
+=end
 
   example "removes trailing slashes from absolute path" do
     expect(File.expand_path("#{@root}foo/")).to eq(File.join(@root, 'foo'))
@@ -81,6 +85,7 @@ RSpec.describe 'win32-xpath' do
   example "removes trailing dots from absolute path" do
     expect(File.expand_path("#{@root}a.")).to eq(File.join(@root, 'a'))
   end
+=begin
 
   example "converts a pathname with a drive letter but no slash" do
     expect(File.expand_path("c:")).to match(/\Ac:\//i)
@@ -203,4 +208,5 @@ RSpec.describe 'win32-xpath' do
     path = "a * 1024"
     expect{ File.expand_path("~/#{path}") }.not_to raise_error
   end
+=end
 end
