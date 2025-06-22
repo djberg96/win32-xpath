@@ -176,6 +176,8 @@ wchar_t* expand_tilde(){
       ruby_xfree(temp);
       rb_raise_syserr("PathAppend", GetLastError());
     }
+
+    ruby_xfree(temp);
 #endif
   }
   else{
@@ -191,8 +193,10 @@ wchar_t* expand_tilde(){
   while(wcsstr(home, L"/"))
     home[wcscspn(home, L"/")] = L'\\';
 
-  if (PathIsRelativeW(home))
+  if (PathIsRelativeW(home)) {
+    ruby_xfree(home);
     rb_raise(rb_eArgError, "non-absolute home");
+  }
 
   return home;
 }
