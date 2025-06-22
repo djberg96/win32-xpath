@@ -191,8 +191,10 @@ wchar_t* expand_tilde(){
   while(wcsstr(home, L"/"))
     home[wcscspn(home, L"/")] = L'\\';
 
-  if (PathIsRelativeW(home))
+  if (PathIsRelativeW(home)) {
+    ruby_xfree(home);
     rb_raise(rb_eArgError, "non-absolute home");
+  }
 
   return home;
 }
