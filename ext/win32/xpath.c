@@ -21,6 +21,48 @@ void rb_raise_syserr(const char* msg, DWORD errnum){
   rb_funcall(rb_mKernel, rb_intern("raise"), 1, v_sys);
 }
 
+
+static inline void replace_char(wchar_t* str, wchar_t find, wchar_t replace) {
+  if (!str) return;
+  wchar_t* p = str;
+  while (*p) {
+    if (*p == find) *p = replace;
+    p++;
+  }
+}
+
+static wchar_t* convert_to_wchar(const char* str, DWORD* length_out) {
+  int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+  if (!length) {
+    rb_raise_syserr("MultiByteToWideChar", GetLastError());
+  }
+
+  wchar_t* wstr = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
+  if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, length)) {
+    ruby_xfree(wstr);
+    rb_raise_syserr("MultiByteToWideChar", GetLastError());
+  }
+
+  if (length_out) *length_out = length;
+  return wstr;
+}
+
+static char* convert_from_wchar(const wchar_t* wstr, DWORD* length_out) {
+  int length = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+  if (!length) {
+    rb_raise_syserr("WideCharToMultiByte", GetLastError());
+  }
+
+  char* str = (char*)ruby_xmalloc(length);
+  if (!WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, length, NULL, NULL)) {
+    ruby_xfree(str);
+    rb_raise_syserr("WideCharToMultiByte", GetLastError());
+  }
+
+  if (length_out) *length_out = length;
+  return str;
+}
+
 // Helper function to find user's home directory
 wchar_t* find_user(wchar_t* str){
   SID* sid;
@@ -55,16 +97,7 @@ wchar_t* find_user(wchar_t* str){
     ruby_xfree(sid);
     ruby_xfree(dom);
 
-    length = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
-    mstr = (char*)ruby_xmalloc(length);
-    length = WideCharToMultiByte(CP_UTF8, 0, str, -1, mstr, length, NULL, NULL);
-
-    if (!length){
-      ruby_xfree(str);
-      ruby_xfree(mstr);
-      rb_raise_syserr("WideCharToMultiByte", GetLastError());
-    }
-
+    mstr = convert_from_wchar(str, &length);
     rb_raise(rb_eArgError, "can't find user '%s'", mstr);
   }
 
@@ -190,8 +223,7 @@ wchar_t* expand_tilde(){
     }
   }
 
-  while(wcsstr(home, L"/"))
-    home[wcscspn(home, L"/")] = L'\\';
+  replace_char(home, L'/', L'\\');
 
   if (PathIsRelativeW(home)) {
     ruby_xfree(home);
@@ -216,7 +248,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   wchar_t* ptr = NULL;
   wchar_t* path = NULL;
   char* final_path;
-  int length;
+  DWORD length;
   rb_encoding* path_encoding;
   rb_econv_t* ec;
   const int replaceflags = ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE;
@@ -256,17 +288,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   rb_str_modify_expand(v_path, MAX_WPATH);
 
   // Make our path a wide string for later functions
-  length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, NULL, 0);
-  path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
-
-  if(!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, path, length)){
-    ruby_xfree(path);
-    rb_raise_syserr("MultibyteToWideChar", GetLastError());
-  }
+  path = convert_to_wchar(StringValueCStr(v_path), NULL);
 
   // Convert all forward slashes to backslashes to Windows API functions work properly
-  while(wcsstr(path, L"/"))
-    path[wcscspn(path, L"/")] = L'\\';
+  replace_char(path, L'/', L'\\');
 
   // Handle ~ expansion if first character.
   if ( (ptr = wcschr(path, L'~')) && ((int)(ptr - path) == 0) ){
@@ -332,8 +357,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_raise_syserr("MultibyteToWideChar", GetLastError());
     }
 
-    while (wcsstr(dir, L"/"))
-      dir[wcscspn(dir, L"/")] = L'\\';
+    replace_char(dir, L'/', L'\\');
 
     // Check for tilde in first character
     if ( (ptr = wcschr(dir, L'~')) && ((int)(ptr - dir) == 0) ){
@@ -402,13 +426,10 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       }
 
       // Convert backslashes into forward slashes
-      while(wcsstr(wpwd, L"\\"))
-        wpwd[wcscspn(wpwd, L"\\")] = L'/';
+      replace_char(wpwd, L'\\', L'/');
 
       // Convert string back to multibyte string before returning Ruby object
-      length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, NULL, 0, NULL, NULL);
-      pwd = (char*)ruby_xmalloc(length);
-      length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
+      pwd = convert_from_wchar(wpwd, NULL);
 
       ruby_xfree(wpwd);
 
@@ -441,12 +462,9 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   }
 
   // Convert backslashes into forward slashes
-  while(wcsstr(buffer, L"\\"))
-    buffer[wcscspn(buffer, L"\\")] = L'/';
+  replace_char(buffer, L'\\', L'/');
 
-  length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
-  final_path = (char*)ruby_xmalloc(length);
-  length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, final_path, length, NULL, NULL);
+  final_path = convert_from_wchar(buffer, &length);
 
   ruby_xfree(buffer);
 
@@ -456,6 +474,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   }
 
   v_path = rb_str_new(final_path, length - 1); // Don't count null terminator
+  ruby_xfree(final_path);
 
   if (rb_enc_to_index(path_encoding) != rb_utf8_encindex()){
     ec = rb_econv_open("UTF-8", rb_enc_name(path_encoding), replaceflags);
