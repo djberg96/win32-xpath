@@ -19,15 +19,22 @@ class File
       if GetCurrentDirectory(buffer.size, buffer) == 0
         raise SystemCallError.new('GetCurrentDirectory')
       end
-      string = buffer.read_string.tr('\\', '/')
-      return string
+      return formatted_windows_string(buffer)
     end
 
     if GetFullPathName(path, MAX_PATH, buffer, nil) == 0
       raise SystemCallError.new('GetFullPathName')
     end
 
-    buffer.read_string.tr('\\', '/')
+    formatted_windows_string(buffer)
+  end
+
+  private
+
+  def self.formatted_windows_string(buffer)
+    str = buffer.read_string.tr('\\', '/')
+    str.chop! while str[-1] == '/'
+    str
   end
 end
 
