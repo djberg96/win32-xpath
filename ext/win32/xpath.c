@@ -176,6 +176,8 @@ wchar_t* expand_tilde(){
       ruby_xfree(temp);
       rb_raise_syserr("PathAppend", GetLastError());
     }
+
+    ruby_xfree(temp);
 #endif
   }
   else{
