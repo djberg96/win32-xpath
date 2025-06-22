@@ -20,18 +20,6 @@ CLEAN.include(
   "**/*.#{CONFIG['DLEXT']}" # C shared object
 )
 
-make = CONFIG['host_os'] =~ /mingw|cygwin/i ? 'make' : 'nmake'
-
-desc "Build the win32-xpath library"
-task :build => [:clean] do
-  require 'devkit' if CONFIG['host_os'] =~ /mingw|cygwin/i
-  Dir.chdir('ext') do
-    ruby "extconf.rb"
-    sh make
-    cp 'xpath.so', 'win32' # For testing
-  end
-end
-
 namespace :gem do
   desc "Build the win32-xpath gem"
   task :create => [:clean] do
@@ -54,8 +42,6 @@ task :bench => [:build] do
 end
 
 desc "Run the test suite"
-RSpec::Core::RakeTask.new(:spec) do |t|
-  t.rspec_opts = '-Iext'
-end
+RSpec::Core::RakeTask.new(:spec)
 
-task :default => [:build, :spec]
+task :default => [:spec]
