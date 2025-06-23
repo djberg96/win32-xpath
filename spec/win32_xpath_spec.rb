@@ -137,7 +137,6 @@ RSpec.describe 'win32-xpath' do
     ENV['HOMEPATH'] = "\\Users\\foo"
     expect(File.expand_path("~/bar")).to eq("C:/Users/foo/bar")
   end
-=begin
 
   example "raises ArgumentError when HOME is nil" do
     ENV['HOME'] = nil
@@ -146,6 +145,7 @@ RSpec.describe 'win32-xpath' do
     expect{ File.expand_path('~') }.to raise_error(ArgumentError)
   end
 
+=begin
   example "raises ArgumentError if HOME is relative" do
     ENV['HOME'] = 'whatever'
     expect{ File.expand_path('~') }.to raise_error(ArgumentError)

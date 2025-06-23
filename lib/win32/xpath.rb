@@ -25,11 +25,9 @@ class File
       raise ArgumentError, "home undefined"
     else
       home = home.tr('\\', '/')
+      path.sub!('~', home) if path.start_with?('~')
+      return home if path == '~'
     end
-
-    return home if path == '~'
-
-    path.sub!('~', home) if path.start_with?('~')
 
     if GetFullPathName(path, MAX_PATH, buffer, nil) == 0
       raise SystemCallError.new('GetFullPathName')
