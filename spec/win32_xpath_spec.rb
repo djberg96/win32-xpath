@@ -122,6 +122,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path("C:/Progra~1")).to eq("C:/Progra~1")
     expect(File.expand_path("C:/Progra~1", "C:/Progra~1")).to eq("C:/Progra~1")
   end
+=end
 
   example "does not modify a HOME string argument" do
     str = "~/a"
@@ -136,6 +137,7 @@ RSpec.describe 'win32-xpath' do
     ENV['HOMEPATH'] = "\\Users\\foo"
     expect(File.expand_path("~/bar")).to eq("C:/Users/foo/bar")
   end
+=begin
 
   example "raises ArgumentError when HOME is nil" do
     ENV['HOME'] = nil

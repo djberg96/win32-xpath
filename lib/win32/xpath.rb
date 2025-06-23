@@ -11,14 +11,25 @@ class File
   MAX_PATH = 256
 
   def self.expand_path(path, dir=nil)
+    path = path.dup
     path = path.to_path if path.respond_to?(:to_path) # Pathname objects, etc
 
     buffer = FFI::MemoryPointer.new(MAX_PATH)
 
     return Dir.pwd if path.empty?
-    return ENV['HOME'].tr('\\', '/') if path == '~'
 
-    path.sub!('~', ENV['HOME']) if path.start_with?('~')
+    home = ENV['HOME'] || ENV['USERPROFILE']
+    home ||= File.join(ENV['HOMEDRIVE'], ENV['HOMEPATH']) if ENV['HOMEDRIVE']
+
+    if home.nil? && path.include?('~')
+      raise ArgumentError
+    else
+      home = home.tr('\\', '/')
+    end
+
+    return home if path == '~'
+
+    path.sub!('~', home) if path.start_with?('~')
 
     if GetFullPathName(path, MAX_PATH, buffer, nil) == 0
       raise SystemCallError.new('GetFullPathName')
