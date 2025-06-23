@@ -37,8 +37,8 @@ namespace :gem do
 end
 
 desc "Run benchmarks"
-task :bench => [:build] do
-  ruby "-Iext bench/bench_win32_xpath.rb"
+task :bench do
+  ruby "-Ilib bench/bench_win32_xpath.rb"
 end
 
 desc "Run the test suite"
