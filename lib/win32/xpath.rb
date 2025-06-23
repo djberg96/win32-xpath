@@ -13,86 +13,184 @@ class File
   attach_function :RegQueryValueEx, :RegQueryValueExA, [:ulong, :string, :pointer, :pointer, :pointer, :pointer], :long
   attach_function :RegCloseKey, [:ulong], :long
   attach_function :LocalFree, [:pointer], :handle
-
   MAX_PATH = 260
   HKEY_LOCAL_MACHINE = 0x80000002
   KEY_QUERY_VALUE = 0x0001
   REG_SZ = 1
   REG_EXPAND_SZ = 2
 
+  # Performance optimization: cache frequently used values
+  @cached_home = nil
+  @cached_pwd = nil
+  @cached_drive = nil
+  @home_cache_time = 0
+  @pwd_cache_time = 0
+
+  # Pre-compiled regex patterns for better performance
+  DRIVE_LETTER_REGEX = /\A[a-zA-Z]:[\/\\]?\z/
+  ABSOLUTE_PATH_REGEX = /\A(?:[a-zA-Z]:[\/\\]?|[\/\\]{2}|\/)/
+  ROOT_DRIVE_REGEX = /\A[a-zA-Z]:\/?\z/i
+
+  # Reusable buffers to reduce allocations
+  @reusable_buffer = nil
+  @buffer_size = 0
   def self.expand_path(path, dir=nil)
-    # Handle type checking and conversion
-    original_path = path
-    path = path.to_path if path.respond_to?(:to_path)
+    # Fast path: handle type checking and conversion with minimal overhead
+    path = path.respond_to?(:to_path) ? path.to_path : path
 
     unless path.is_a?(String)
       raise TypeError, "no implicit conversion of #{path.class} into String"
     end
 
+    # Optimize: avoid dup for empty paths
+    if path.empty?
+      return dir ? expand_path(dir) : get_cached_pwd
+    end
+
+    # Only dup if we're going to modify the string
     path = path.dup
 
-    # Handle dir argument
+    # Handle dir argument with optimized type checking
     if dir
-      dir = dir.to_path if dir.respond_to?(:to_path)
+      dir = dir.respond_to?(:to_path) ? dir.to_path : dir
       unless dir.is_a?(String)
         raise TypeError, "no implicit conversion of #{dir.class} into String"
       end
       dir = expand_path(dir) # Recursively expand directory
     end
 
-    # Handle empty path
-    if path.empty?
-      return dir || Dir.pwd
-    end    # Handle tilde expansion
+    # Fast tilde expansion check using optimized method
     if path.start_with?('~')
-      path = expand_tilde(path)
+      path = expand_tilde_fast(path)
     end
 
-    # Handle drive letters properly - if path has drive letter, ignore dir
-    if path =~ /^[a-zA-Z]:/
-      # Path has drive letter, use it as is
-      dir = nil
+    # Optimized drive letter check using pre-compiled regex
+    if path =~ DRIVE_LETTER_REGEX
+      dir = nil # Path has drive letter, ignore dir
     end
 
-    # If we have a directory and path is relative, join them
-    if dir && !absolute_path?(path)
-      path = File.join(dir, path)
-    end    # Normalize path separators
-    path = path.tr('\\', '/')
+    # Fast relative path joining
+    if dir && !absolute_path_fast?(path)
+      path = join_paths_fast(dir, path)
+    end
 
-    # Use Windows API to get full path - allocate more space for very long paths
-    buffer_size = [path.length * 2, MAX_PATH * 4, 32768].max
-    buffer = FFI::MemoryPointer.new(:char, buffer_size)
+    # Optimize: single tr operation and efficient buffer management
+    path.tr!('\\', '/')
+
+    # Use optimized buffer allocation
+    buffer_size = calculate_buffer_size(path.length)
+    buffer = get_reusable_buffer(buffer_size)
 
     result = GetFullPathName(path, buffer_size, buffer, nil)
     if result == 0
-      # If GetFullPathName fails, try manual construction for very long paths
-      if path.start_with?('/')
-        # Absolute path starting with slash - prepend current drive
-        current_drive = Dir.pwd[0,2]
-        path = current_drive + path
-      elsif !absolute_path?(path)
-        # Relative path - prepend current directory
-        path = File.join(Dir.pwd, path)
-      end
-      result_path = path.tr('\\', '/')
+      # Fast fallback for long paths
+      result_path = construct_absolute_path_fast(path)
     else
-      result_path = formatted_windows_string(buffer)
+      result_path = format_windows_string_fast(buffer)
     end
 
-    # Ensure UTF-8 encoding to match Ruby standards
-    result_path.force_encoding('UTF-8') if result_path.respond_to?(:force_encoding)
+    # Optimize: only force encoding if needed
+    result_path.force_encoding('UTF-8') unless result_path.encoding == Encoding::UTF_8
 
     result_path
   end
-
   private
+  # Performance optimized caching methods
+  def self.get_cached_pwd
+    current_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    if @cached_pwd.nil? || (current_time - @pwd_cache_time) > 5.0
+      @cached_pwd = Dir.pwd
+      @pwd_cache_time = current_time
+    end
+    @cached_pwd
+  end
 
-  def self.expand_tilde(path)
+  def self.get_cached_home
+    # Don't cache home directory to allow tests to change ENV variables
+    compute_home_directory
+  end
+
+  def self.get_cached_drive
+    @cached_drive ||= get_cached_pwd[0,2]
+  end
+
+  # Optimized buffer management
+  def self.calculate_buffer_size(path_length)
+    [path_length * 2, MAX_PATH * 4, 4096].max
+  end
+
+  def self.get_reusable_buffer(needed_size)
+    if @reusable_buffer.nil? || @buffer_size < needed_size
+      @buffer_size = [needed_size, 32768].max
+      @reusable_buffer = FFI::MemoryPointer.new(:char, @buffer_size)
+    end
+    @reusable_buffer
+  end
+
+  # Fast path operations
+  def self.absolute_path_fast?(path)
+    path =~ ABSOLUTE_PATH_REGEX
+  end
+
+  def self.join_paths_fast(dir, path)
+    # Optimize common case where dir ends with / and path doesn't start with /
+    if dir.end_with?('/') && !path.start_with?('/')
+      dir + path
+    elsif !dir.end_with?('/') && !path.start_with?('/')
+      dir + '/' + path
+    else
+      File.join(dir, path)
+    end
+  end
+
+  def self.construct_absolute_path_fast(path)
+    if path.start_with?('/')
+      get_cached_drive + path
+    else
+      join_paths_fast(get_cached_pwd, path)
+    end.tr('\\', '/')
+  end
+
+  def self.format_windows_string_fast(buffer)
+    str = buffer.read_string
+    str.tr!('\\', '/')
+
+    # Optimize: single pass cleanup
+    str.rstrip! if str.end_with?(' ')
+
+    # Remove trailing slashes except for root paths
+    while str.length > 1 && str.end_with?('/') && !(str =~ ROOT_DRIVE_REGEX)
+      str.chop!
+    end
+
+    # Ensure root drives end with slash
+    str += '/' if str =~ /\A[a-zA-Z]:\z/
+
+    # Remove trailing dots (Windows quirk)
+    while str.length > 1 && str.end_with?('.') && str[-2] != '/'
+      str.chop!
+    end
+
+    str
+  end
+
+  def self.expand_tilde_fast(path)
+    case path
+    when '~'
+      get_cached_home
+    when /\A~[\/\\]/
+      get_cached_home + path[1..-1]
+    else
+      # Handle ~user syntax - keep original implementation for compatibility
+      expand_tilde_original(path)
+    end
+  end
+  # Original tilde expansion for complex cases
+  def self.expand_tilde_original(path)
     if path == '~'
-      return get_home_directory
+      return get_cached_home
     elsif path.start_with?('~/')
-      home = get_home_directory
+      home = get_cached_home
       return home + path[1..-1]
     elsif path.start_with?('~') && (path[1] == '\\' || path[1].nil? || path[1] =~ /[^\/\\]/)
       # Handle ~user syntax
@@ -106,7 +204,7 @@ class File
       end
 
       if user.empty?
-        home = get_home_directory
+        home = get_cached_home
       else
         home = get_user_home_directory(user)
       end
@@ -117,27 +215,31 @@ class File
     path
   end
 
-  def self.get_home_directory
-    home = ENV['HOME'] || ENV['USERPROFILE']
+  def self.compute_home_directory
+    # Optimized environment variable lookup with single traversal
+    home = ENV['HOME']
+    return normalize_home_path(home) if home
 
-    if home.nil? && ENV['HOMEDRIVE'] && ENV['HOMEPATH']
+    home = ENV['USERPROFILE']
+    return normalize_home_path(home) if home
+
+    if ENV['HOMEDRIVE'] && ENV['HOMEPATH']
       home = ENV['HOMEDRIVE'] + ENV['HOMEPATH']
+      return normalize_home_path(home)
     end
 
-    if home.nil?
-      raise ArgumentError, "couldn't find HOME environment -- expanding '~'"
-    end
-
+    raise ArgumentError, "couldn't find HOME environment -- expanding '~'"
+  end
+  def self.normalize_home_path(home)
     home = home.tr('\\', '/')
-
-    unless absolute_path?(home)
+    unless absolute_path_fast?(home)
       raise ArgumentError, "non-absolute home"
     end
-
     home
   end
+
   def self.get_user_home_directory(username)
-    # Allocate memory for SID and domain
+    # Optimize: Pre-allocate known buffer sizes
     sid_buffer = FFI::MemoryPointer.new(:char, 256)
     domain_buffer = FFI::MemoryPointer.new(:char, 256)
     sid_size = FFI::MemoryPointer.new(:ulong, 1)
@@ -148,28 +250,26 @@ class File
     domain_size.write_ulong(256)
 
     # Look up the user account
-    success = LookupAccountName(nil, username, sid_buffer, sid_size, domain_buffer, domain_size, sid_name_use)
-
-    unless success
+    unless LookupAccountName(nil, username, sid_buffer, sid_size, domain_buffer, domain_size, sid_name_use)
       raise ArgumentError, "can't find user '#{username}'"
     end
 
     # Convert SID to string
     string_sid_ptr = FFI::MemoryPointer.new(:pointer, 1)
-    success = ConvertSidToStringSid(sid_buffer, string_sid_ptr)
-
-    unless success
+    unless ConvertSidToStringSid(sid_buffer, string_sid_ptr)
       raise SystemCallError.new('ConvertSidToStringSid', FFI.errno)
     end
 
     string_sid = string_sid_ptr.read_pointer.read_string
 
-    # Build registry key path
-    key_path = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\#{string_sid}"    # Open registry key
+    # Build registry key path with string interpolation (faster than concatenation)
+    key_path = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\#{string_sid}"
+
+    # Open registry key
     key_handle = FFI::MemoryPointer.new(:ulong, 1)
     result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, key_path, 0, KEY_QUERY_VALUE, key_handle)
 
-    # Free the string SID
+    # Free the string SID immediately
     LocalFree(string_sid_ptr.read_pointer)
 
     if result != 0
@@ -177,7 +277,8 @@ class File
     end
 
     handle = key_handle.read_ulong
-      # Query the ProfileImagePath value
+
+    # Query the ProfileImagePath value with optimized buffer
     data_buffer = FFI::MemoryPointer.new(:char, MAX_PATH * 2)
     data_size = FFI::MemoryPointer.new(:ulong, 1)
     data_type = FFI::MemoryPointer.new(:ulong, 1)
@@ -192,32 +293,19 @@ class File
       raise Errno::ENOENT, "can't find home directory for user '#{username}'"
     end
 
-    home = data_buffer.read_string.tr('\\', '/')
+    # Optimize: single tr! operation
+    home = data_buffer.read_string
+    home.tr!('\\', '/')
     home
   end
+
+  # Optimized path checking using pre-compiled regex
   def self.absolute_path?(path)
-    # Check for drive letter (C: or C:\) or UNC path (//)
-    path =~ /^[a-zA-Z]:[\/\\]?/ || path.start_with?('//') || path.start_with?('\\\\') || path.start_with?('/')
+    path =~ ABSOLUTE_PATH_REGEX
   end
+
+  # Keep original method name for backward compatibility but use optimized version
   def self.formatted_windows_string(buffer)
-    str = buffer.read_string.tr('\\', '/')
-
-    # Remove trailing slashes except for root paths
-    while str.length > 1 && str[-1] == '/' && !(str =~ /^[a-zA-Z]:\/$/i)
-      str = str[0..-2]
-    end
-
-    # Ensure root drives end with slash
-    if str =~ /^[a-zA-Z]:$/i
-      str += '/'
-    end
-
-    # Handle Windows path quirks - remove trailing spaces and dots
-    str = str.rstrip
-    while str.length > 1 && str[-1] == '.' && str[-2] != '/'
-      str = str[0..-2]
-    end
-
-    str
+    format_windows_string_fast(buffer)
   end
 end
