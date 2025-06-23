@@ -29,11 +29,11 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('.')).to eq(@pwd)
   end
 
-=begin
   example "converts relative path into absolute pathname using current directory" do
     expect(File.expand_path('foo')).to eq(File.join(@pwd, 'foo'))
   end
 
+=begin
   example "converts relative path into absolute pathname ignoring nil dir" do
     expect(File.expand_path('foo', nil)).to eq(File.join(@pwd, 'foo'))
   end
@@ -117,12 +117,12 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path('', '~/foo')).to eq("#{@home}/foo")
     expect(File.expand_path('foo', '~')).to eq("#{@home}/foo")
   end
+=end
 
   example "doesn't attempt to expand a tilde unless it's the first character" do
     expect(File.expand_path("C:/Progra~1")).to eq("C:/Progra~1")
     expect(File.expand_path("C:/Progra~1", "C:/Progra~1")).to eq("C:/Progra~1")
   end
-=end
 
   example "does not modify a HOME string argument" do
     str = "~/a"

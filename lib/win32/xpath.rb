@@ -22,7 +22,7 @@ class File
     home ||= File.join(ENV['HOMEDRIVE'], ENV['HOMEPATH']) if ENV['HOMEDRIVE']
 
     if home.nil? && path.include?('~')
-      raise ArgumentError
+      raise ArgumentError, "home undefined"
     else
       home = home.tr('\\', '/')
     end
