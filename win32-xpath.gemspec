@@ -2,7 +2,7 @@ require 'rubygems'
 
 Gem::Specification.new do |spec|
   spec.name       = 'win32-xpath'
-  spec.version    = '1.2.0'
+  spec.version    = '2.0.0'
   spec.author     = 'Daniel J. Berger'
   spec.license    = 'Apache-2.0'
   spec.email      = 'djberg96@gmail.com'
@@ -12,7 +12,6 @@ Gem::Specification.new do |spec|
   spec.files      = Dir['**/*'].reject{ |f| f.include?('git') }
   spec.cert_chain = Dir['certs/*']
 
-  spec.extensions = ['ext/extconf.rb']
   spec.add_development_dependency('rake')
   spec.add_development_dependency('rspec', '~> 3.11')
 
