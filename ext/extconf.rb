@@ -7,4 +7,4 @@ $LDFLAGS += ' -lshlwapi -ladvapi32'
 $CFLAGS += ' -DUNICODE -D_UNICODE'
 
 # Create the makefile
-create_makefile('win32/xpath')
+create_makefile('win32/xpath', 'win32')
