@@ -2,6 +2,8 @@ require 'ffi'
 
 class File
   extend FFI::Library
+  ffi_lib 'shlwapi'
+
   ffi_lib 'api-ms-win-core-path-l1-1-0'
 
   typedef :ulong, :dword
@@ -21,15 +23,21 @@ class File
 
   attach_function :PathAllocCanonicalize, [:string, :dword, :pointer], :int
 
-  def self.xpath(path, dir=nil)
+  def self.expand_path2(path, dir=nil)
+    flags = PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH | PATHCCH_CANONICALIZE_SLASHES
+
+    if ['', '.'].include?(path) && dir.nil?
+      return Dir.pwd
+    end
+
     buffer = FFI::MemoryPointer.new(MAX_PATH)
-    result = PathAllocCanonicalize(path, PATHCCH_NONE, buffer)
+    result = PathAllocCanonicalize(path, flags, buffer)
 
     if result != S_OK
       raise SystemCallError.new('PathAllocCanonicalize')
     end
 
-    buffer.read_string
+    buffer.read_pointer.read_string.tr('\\', '/').encode('UTF-8')
   end
 end
 
