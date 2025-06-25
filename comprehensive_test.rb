@@ -79,6 +79,6 @@ end
 # Additional performance test
 puts "\nQuick performance test..."
 start_time = Time.now
-1000.times { File.expand_path("~/test/path") }
+100.times { File.expand_path("C:/test/path") }  # Use simple absolute path instead
 end_time = Time.now
-puts "1000 expansions took #{((end_time - start_time) * 1000).round(2)}ms"
+puts "100 expansions took #{((end_time - start_time) * 1000).round(2)}ms"

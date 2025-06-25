@@ -132,6 +132,7 @@ static wchar_t* get_cached_drive() {
       cached_drive[1] = pwd[1];
       cached_drive[2] = L'\0';
     }
+    ruby_xfree(pwd); // Free the copy returned by get_cached_pwd()
   }
   return cached_drive;
 }
