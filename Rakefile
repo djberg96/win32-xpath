@@ -48,6 +48,16 @@ namespace :gem do
   end
 end
 
+desc "Build the win32-xpath library"
+task :build => [:clean] do
+  require 'devkit' if CONFIG['host_os'] =~ /mingw|cygwin/i
+  Dir.chdir('ext') do
+    ruby "extconf.rb"
+    sh make
+    cp 'xpath.so', 'win32' # For testing
+  end
+end
+
 desc "Run benchmarks"
 task :bench => [:build] do
   ruby "-Iext bench/bench_win32_xpath.rb"

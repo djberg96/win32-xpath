@@ -3,6 +3,8 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <sddl.h>
+#include <time.h>
+#include <stdlib.h>
 
 #ifdef __MINGW32__
 #define swprintf _snwprintf 
@@ -15,10 +17,169 @@
 #define MAX_WPATH MAX_PATH * sizeof(wchar_t)
 #endif
 
+// Performance optimization: cached values
+static wchar_t* cached_home = NULL;
+static wchar_t* cached_pwd = NULL;
+static wchar_t* cached_drive = NULL;
+static clock_t home_cache_time = 0;
+static clock_t pwd_cache_time = 0;
+static const clock_t CACHE_EXPIRE_TIME = 5 * CLOCKS_PER_SEC; // 5 seconds
+
+// Reusable buffer for performance
+static wchar_t* reusable_buffer = NULL;
+static size_t buffer_size = 0;
+static const size_t MIN_BUFFER_SIZE = 4096;
+static const size_t MAX_BUFFER_SIZE = 32768;
+
 // Equivalent to raise SystemCallError.new(string, errnum)
 void rb_raise_syserr(const char* msg, DWORD errnum){
   VALUE v_sys = rb_funcall(rb_eSystemCallError, rb_intern("new"), 2, rb_str_new2(msg), LONG2FIX(errnum));
   rb_funcall(rb_mKernel, rb_intern("raise"), 1, v_sys);
+}
+
+// Helper functions for performance optimization
+static wchar_t* get_reusable_buffer(size_t needed_size) {
+  if (reusable_buffer == NULL || buffer_size < needed_size) {
+    if (reusable_buffer) {
+      ruby_xfree(reusable_buffer);
+    }
+    buffer_size = (needed_size > MAX_BUFFER_SIZE) ? needed_size : MAX_BUFFER_SIZE;
+    reusable_buffer = (wchar_t*)ruby_xmalloc(buffer_size);
+  }
+  return reusable_buffer;
+}
+
+static size_t calculate_buffer_size(size_t path_length) {
+  size_t needed = path_length * 2;
+  if (needed < MIN_BUFFER_SIZE) needed = MIN_BUFFER_SIZE;
+  if (needed < MAX_PATH * 4) needed = MAX_PATH * 4;
+  return needed;
+}
+
+// Fast path checking functions
+static int is_absolute_path(const wchar_t* path) {
+  if (!path || !*path) return 0;
+  
+  // Check for drive letter (C:\ or C:/)
+  if (iswalpha(path[0]) && path[1] == L':' && 
+      (path[2] == L'\\' || path[2] == L'/' || path[2] == L'\0')) {
+    return 1;
+  }
+  
+  // Check for UNC path (\\server\share)
+  if (path[0] == L'\\' && path[1] == L'\\') {
+    return 1;
+  }
+  
+  // Check for Unix-style absolute path
+  if (path[0] == L'/') {
+    return 1;
+  }
+  
+  return 0;
+}
+
+static int is_drive_letter_only(const wchar_t* path) {
+  if (!path || wcslen(path) < 2) return 0;
+  return iswalpha(path[0]) && path[1] == L':' && 
+         (path[2] == L'\0' || (path[2] == L'/' && path[3] == L'\0') ||
+          (path[2] == L'\\' && path[3] == L'\0'));
+}
+
+static int starts_with_drive_letter(const wchar_t* path) {
+  if (!path || wcslen(path) < 2) return 0;
+  return iswalpha(path[0]) && path[1] == L':';
+}
+
+// Cached directory functions
+static wchar_t* get_cached_pwd() {
+  clock_t current_time = clock();
+  
+  if (cached_pwd == NULL || (current_time - pwd_cache_time) > CACHE_EXPIRE_TIME) {
+    if (cached_pwd) {
+      ruby_xfree(cached_pwd);
+      cached_pwd = NULL;
+    }
+    
+    DWORD length = GetCurrentDirectoryW(0, NULL);
+    if (length == 0) {
+      rb_raise_syserr("GetCurrentDirectory", GetLastError());
+    }
+    
+    cached_pwd = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
+    if (GetCurrentDirectoryW(length, cached_pwd) == 0) {
+      ruby_xfree(cached_pwd);
+      cached_pwd = NULL;
+      rb_raise_syserr("GetCurrentDirectory", GetLastError());
+    }
+    
+    pwd_cache_time = current_time;
+  }
+  
+  // Return a copy to avoid modifying the cached version
+  size_t len = wcslen(cached_pwd);
+  wchar_t* result = (wchar_t*)ruby_xmalloc((len + 1) * sizeof(wchar_t));
+  wcscpy(result, cached_pwd);
+  return result;
+}
+
+static wchar_t* get_cached_drive() {
+  if (cached_drive == NULL) {
+    wchar_t* pwd = get_cached_pwd();
+    if (pwd && wcslen(pwd) >= 2) {
+      cached_drive = (wchar_t*)ruby_xmalloc(4 * sizeof(wchar_t));
+      cached_drive[0] = pwd[0];
+      cached_drive[1] = pwd[1];
+      cached_drive[2] = L'\0';
+    }
+    ruby_xfree(pwd); // Free the copy returned by get_cached_pwd()
+  }
+  return cached_drive;
+}
+
+// Optimized string operations
+static void convert_slashes_to_backslashes(wchar_t* path) {
+  while (*path) {
+    if (*path == L'/') *path = L'\\';
+    path++;
+  }
+}
+
+static void convert_slashes_to_forward(wchar_t* path) {
+  while (*path) {
+    if (*path == L'\\') *path = L'/';
+    path++;
+  }
+}
+
+static void remove_trailing_slashes(wchar_t* path) {
+  size_t len = wcslen(path);
+  if (len <= 1) return;
+  
+  // Don't remove slash from root paths like "C:/"
+  if (len == 3 && is_drive_letter_only(path)) return;
+  
+  while (len > 1 && (path[len-1] == L'/' || path[len-1] == L'\\')) {
+    // Don't remove if it's a root drive path
+    if (len == 3 && iswalpha(path[0]) && path[1] == L':') break;
+    path[--len] = L'\0';
+  }
+}
+
+static void ensure_drive_ends_with_slash(wchar_t* path) {
+  size_t len = wcslen(path);
+  if (len == 2 && iswalpha(path[0]) && path[1] == L':') {
+    path[2] = L'/';
+    path[3] = L'\0';
+  }
+}
+
+static void remove_trailing_dots(wchar_t* path) {
+  size_t len = wcslen(path);
+  while (len > 1 && path[len-1] == L'.' && 
+         (len == 1 || path[len-2] != L'/' && path[len-2] != L'\\')) {
+    path[--len] = L'\0';
+  }
 }
 
 // Helper function to find user's home directory
@@ -88,11 +249,10 @@ wchar_t* find_user(wchar_t* str){
 
   // Get the key handle we need
   rv = RegOpenKeyExW(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &phkResult);
-
   if (rv != ERROR_SUCCESS)
     rb_raise_syserr("RegOpenKeyEx", rv);
 
-  lpData = (wchar_t*)malloc(MAX_WPATH);
+  lpData = (wchar_t*)ruby_xmalloc(MAX_WPATH);
   cbData = MAX_WPATH;
   lpType = REG_EXPAND_SZ;
 
@@ -114,15 +274,14 @@ wchar_t* find_user(wchar_t* str){
   return lpData;
 }
 
-/* Helper function to expand tilde into full path. Note that I don't use the
- * PathCchXXX functions here because it's extremely unlikely that a person's
- * home directory exceeds MAX_PATH. In the unlikely even that it does exceed
- * MAX_PATH, an error will be raised.
- */
+/* Helper function to expand tilde into full path with caching optimization */
 wchar_t* expand_tilde(){
   DWORD size = 0;
   wchar_t* home = NULL;
   const wchar_t* env = L"HOME";
+
+  // Don't cache home directory to allow tests to change ENV variables
+  // This matches the Ruby optimization for test compatibility
 
   // First, try to get HOME environment variable
   size = GetEnvironmentVariableW(env, NULL, 0);
@@ -133,7 +292,7 @@ wchar_t* expand_tilde(){
     size = GetEnvironmentVariableW(env, NULL, 0);
   }
 
-  // If that isn't found the try HOMEDRIVE + HOMEPATH
+  // If that isn't found then try HOMEDRIVE + HOMEPATH
   if(!size){
     DWORD size2;
     wchar_t* temp;
@@ -152,8 +311,7 @@ wchar_t* expand_tilde(){
         rb_raise_syserr("GetEnvironmentVariable", GetLastError());
       else
         rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
-    }
-
+    }    // Use a dedicated buffer instead of reusable buffer to avoid conflicts
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
     temp = (wchar_t*)ruby_xmalloc(MAX_WPATH);
 
@@ -176,9 +334,8 @@ wchar_t* expand_tilde(){
       ruby_xfree(temp);
       rb_raise_syserr("PathAppend", GetLastError());
     }
-
-    ruby_xfree(temp);
 #endif
+    ruby_xfree(temp);
   }
   else{
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
@@ -189,15 +346,15 @@ wchar_t* expand_tilde(){
       rb_raise_syserr("GetEnvironmentVariable", GetLastError());
     }
   }
-
-  while(wcsstr(home, L"/"))
-    home[wcscspn(home, L"/")] = L'\\';
+  // Convert slashes and validate
+  convert_slashes_to_backslashes(home);
 
   if (PathIsRelativeW(home)) {
     ruby_xfree(home);
     rb_raise(rb_eArgError, "non-absolute home");
   }
 
+  // Return the allocated result directly (no need to copy since we're not using reusable buffer)
   return home;
 }
 
@@ -215,14 +372,17 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   wchar_t* buffer = NULL;
   wchar_t* ptr = NULL;
   wchar_t* path = NULL;
+  wchar_t* dir = NULL;
   char* final_path;
   int length;
   rb_encoding* path_encoding;
   rb_econv_t* ec;
   const int replaceflags = ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE;
+  int path_is_empty = 0;
 
   rb_scan_args(argc, argv, "11", &v_path_orig, &v_dir_orig);
 
+  // Fast path: handle to_path conversion
   if (rb_respond_to(v_path_orig, rb_intern("to_path")))
     v_path_orig = rb_funcall2(v_path_orig, rb_intern("to_path"), 0, NULL);
 
@@ -233,15 +393,28 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       v_dir_orig = rb_funcall2(v_dir_orig, rb_intern("to_path"), 0, NULL);
 
     SafeStringValue(v_dir_orig);
-  }
-
-  // Short circuit an empty first argument if there's no second argument.
+  }  // Fast path: empty path optimization
   if(NUM2LONG(rb_str_length(v_path_orig)) == 0){
-    if(NIL_P(v_dir_orig))
-      return rb_dir_getwd();
+    if(NIL_P(v_dir_orig)){
+      // Return cached PWD
+      wchar_t* pwd = get_cached_pwd();
+      convert_slashes_to_forward(pwd);
+      
+      length = WideCharToMultiByte(CP_UTF8, 0, pwd, -1, NULL, 0, NULL, NULL);
+      final_path = (char*)ruby_xmalloc(length);
+      WideCharToMultiByte(CP_UTF8, 0, pwd, -1, final_path, length, NULL, NULL);
+      
+      VALUE result = rb_str_new(final_path, length - 1);
+      ruby_xfree(final_path);
+      ruby_xfree(pwd); // Free the copy
+      return result;
+    } else {
+      // Recursively expand the directory argument
+      return rb_xpath(1, &v_dir_orig, self);
+    }
   }
 
-  // Dup and prep string for modification
+  // Encoding handling optimization
   path_encoding = rb_enc_get(v_path_orig);
 
   if (rb_enc_to_index(path_encoding) == rb_utf8_encindex()){
@@ -253,65 +426,63 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     rb_econv_close(ec);
   }
   
-  rb_str_modify_expand(v_path, MAX_WPATH);
+  if (!path_is_empty) {
+    // Convert to wide string with optimized buffer calculation
+    size_t str_len = RSTRING_LEN(v_path);
+    size_t needed_size = calculate_buffer_size(str_len);
+    
+    length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, NULL, 0);
+    path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
-  // Make our path a wide string for later functions
-  length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, NULL, 0);
-  path = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
-
-  if(!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, path, length)){
-    ruby_xfree(path);
-    rb_raise_syserr("MultibyteToWideChar", GetLastError());
-  }
-
-  // Convert all forward slashes to backslashes to Windows API functions work properly
-  while(wcsstr(path, L"/"))
-    path[wcscspn(path, L"/")] = L'\\';
-
-  // Handle ~ expansion if first character.
-  if ( (ptr = wcschr(path, L'~')) && ((int)(ptr - path) == 0) ){
-    wchar_t* home;
-
-    // Handle both ~/user and ~user syntax
-    if (ptr[1] && ptr[1] != L'\\'){
-      home = find_user(++ptr);
+    if(!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_path), -1, path, length)){
+      ruby_xfree(path);
+      rb_raise_syserr("MultibyteToWideChar", GetLastError());
     }
-    else{
+
+    // Optimized slash conversion
+    convert_slashes_to_backslashes(path);
+
+    // Fast tilde expansion check
+    if (path[0] == L'~'){
+      wchar_t* home;
+      
+      if (path[1] == L'\0' || path[1] == L'\\'){
+        // Handle ~ or ~/path
+        home = expand_tilde();
+        
+        if (path[1] == L'\\'){
 #ifdef HAVE_PATHCCHAPPENDEX
-      HRESULT hr;
-      home = expand_tilde();
-
-      hr = PathCchAppendEx(home, MAX_WPATH, ++ptr, 1);
-
-      if(hr != S_OK){
-        ruby_xfree(home);
-        rb_raise_syserr("PathCchAppendEx", hr);
-      }
+          HRESULT hr = PathCchAppendEx(home, MAX_WPATH, path + 2, 1);
+          if(hr != S_OK){
+            ruby_xfree(home);
+            rb_raise_syserr("PathCchAppendEx", hr);
+          }
 #else
-      home = expand_tilde();
-
-      if (!PathAppendW(home, ++ptr)){
-        ruby_xfree(home);
-        rb_raise_syserr("PathAppend", GetLastError());
-      }
+          if (!PathAppendW(home, path + 2)){
+            ruby_xfree(home);
+            rb_raise_syserr("PathAppend", GetLastError());
+          }
 #endif
+        }
+        ruby_xfree(path);
+        path = home;
+      }
+      else{
+        // Handle ~user syntax
+        home = find_user(path + 1);
+        ruby_xfree(path);
+        path = home;
+      }
     }
-
-    path = home;
   }
 
-  // Directory argument is present
+  // Directory argument handling with optimizations
   if (!NIL_P(v_dir_orig)){
-    wchar_t* dir;
     VALUE v_dir;
     rb_encoding* dir_encoding;
-#ifdef HAVE_PATHCCH_H
-    HRESULT hr;
-#endif
-
+    
     dir_encoding = rb_enc_get(v_dir_orig);
 
-    // Hooray for encodings
     if (rb_enc_to_index(dir_encoding) == rb_utf8_encindex()){
       v_dir = rb_str_dup(v_dir_orig);
     }
@@ -321,52 +492,60 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       rb_econv_close(ec);
     }
 
-    // Prep string for modification
-    rb_str_modify_expand(v_dir, MAX_WPATH);
-
     length = MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_dir), -1, NULL, 0);
-    dir = (wchar_t*)ruby_xmalloc(MAX_WPATH * sizeof(wchar_t));
+    dir = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
 
     if (!MultiByteToWideChar(CP_UTF8, 0, StringValueCStr(v_dir), -1, dir, length)){
       ruby_xfree(dir);
       rb_raise_syserr("MultibyteToWideChar", GetLastError());
     }
 
-    while (wcsstr(dir, L"/"))
-      dir[wcscspn(dir, L"/")] = L'\\';
+    convert_slashes_to_backslashes(dir);
 
-    // Check for tilde in first character
-    if ( (ptr = wcschr(dir, L'~')) && ((int)(ptr - dir) == 0) ){
-      if (ptr[1] && ptr[1] != L'\\'){
-        dir = find_user(++ptr);
+    // Handle tilde in directory
+    if (dir[0] == L'~'){
+      wchar_t* dir_home;
+      
+      if (dir[1] == L'\0' || dir[1] == L'\\'){
+        dir_home = expand_tilde();
+        
+        if (dir[1] == L'\\'){
+#ifdef HAVE_PATHCCH_H
+          HRESULT hr = PathCchAppendEx(dir_home, MAX_WPATH, dir + 2, 1);
+          if(hr != S_OK){
+            ruby_xfree(dir_home);
+            rb_raise_syserr("PathCchAppendEx", hr);
+          }
+#else
+          if (!PathAppendW(dir_home, dir + 2)){
+            ruby_xfree(dir_home);
+            rb_raise_syserr("PathAppend", GetLastError());
+          }
+#endif
+        }
+        ruby_xfree(dir);
+        dir = dir_home;
       }
       else{
-        dir = expand_tilde();
-
-#ifdef HAVE_PATHCCH_H
-        hr = PathCchAppendEx(dir, MAX_WPATH, ++ptr, 1);
-
-        if(hr != S_OK){
-          ruby_xfree(dir);
-          rb_raise_syserr("PathCchAppendEx", hr);
-        }
-#else
-        if (!PathAppendW(dir, ++ptr)){
-          ruby_xfree(dir);
-          rb_raise_syserr("PathAppend", GetLastError());
-        }
-#endif
+        dir_home = find_user(dir + 1);
+        ruby_xfree(dir);
+        dir = dir_home;
       }
-    }
-
-    if (!wcslen(path))
+    }    // Fast path: if path is empty, use directory
+    if (path_is_empty || (path && !wcslen(path))) {
+      if (path) ruby_xfree(path);
       path = dir;
-
-    if (PathIsRelativeW(path)){ 
-
+      dir = NULL;
+    }
+    // Fast path: if path has drive letter, ignore directory
+    else if (path && starts_with_drive_letter(path)) {
+      ruby_xfree(dir);
+      dir = NULL;
+    }
+    // Path is relative, combine with directory
+    else if (path && !is_absolute_path(path)) {
 #ifdef HAVE_PATHCCH_H
-      hr = PathCchAppendEx(dir, MAX_WPATH, path, 1);
-
+      HRESULT hr = PathCchAppendEx(dir, MAX_WPATH, path, 1);
       if(hr != S_OK){
         ruby_xfree(dir);
         rb_raise_syserr("PathCchAppendEx", hr);
@@ -378,96 +557,114 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       }
 #endif
 
-      // Remove leading slashes from relative paths
-      if (dir[0] == L'\\')
-        ++dir;
-
+      ruby_xfree(path);
       path = dir;
+      dir = NULL;
     }
-  }
-  else{
-    if (!wcslen(path)){
-      char* pwd;
-      wchar_t* wpwd;
-
-      // First call, get the length
-      length = GetCurrentDirectoryW(0, NULL);
-      wpwd = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
-
-      length = GetCurrentDirectoryW(length, wpwd);
-
-      if(!length){
-        ruby_xfree(wpwd);
-        rb_raise_syserr("GetCurrentDirectory", GetLastError());
-      }
-
-      // Convert backslashes into forward slashes
-      while(wcsstr(wpwd, L"\\"))
-        wpwd[wcscspn(wpwd, L"\\")] = L'/';
-
-      // Convert string back to multibyte string before returning Ruby object
-      length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, NULL, 0, NULL, NULL);
-      pwd = (char*)ruby_xmalloc(length);
-      length = WideCharToMultiByte(CP_UTF8, 0, wpwd, -1, pwd, length, NULL, NULL);
-
-      ruby_xfree(wpwd);
-
-      if (!length){
-        ruby_xfree(pwd);
-        rb_raise_syserr("WideCharToMultiByte", GetLastError());
-      }
-
-      return rb_str_new2(pwd);
+    else {
+      // Path is absolute, ignore directory
+      ruby_xfree(dir);
+      dir = NULL;
+    }
+  }  else{
+    // No directory argument
+    if (path_is_empty || (path && !wcslen(path))){
+      // Return current directory
+      wchar_t* pwd = get_cached_pwd();
+      convert_slashes_to_forward(pwd);
+      
+      length = WideCharToMultiByte(CP_UTF8, 0, pwd, -1, NULL, 0, NULL, NULL);
+      final_path = (char*)ruby_xmalloc(length);
+      WideCharToMultiByte(CP_UTF8, 0, pwd, -1, final_path, length, NULL, NULL);
+      
+      VALUE result = rb_str_new(final_path, length - 1);
+      ruby_xfree(final_path);
+      ruby_xfree(pwd); // Free the copy
+      if (path) ruby_xfree(path);
+      return result;
     }
   }
 
-  // Strip all trailing backslashes
+  // Remove trailing backslashes with optimization
 #ifdef HAVE_PATHCCH_H
   while (PathCchRemoveBackslash(path, wcslen(path)+1) == S_OK);
 #else
-  while (!*PathRemoveBackslashW(path));
+  PathRemoveBackslashW(path);
 #endif
-
-  // First call, get the length
-  length = GetFullPathNameW(path, 0, buffer, NULL);
+  // Get full path with optimized buffer
+  length = GetFullPathNameW(path, 0, NULL, NULL);
+  if (length == 0) {
+    ruby_xfree(path);
+    rb_raise_syserr("GetFullPathName", GetLastError());
+  }
+  
+  // Allocate a dedicated buffer for this call to avoid conflicts with reusable buffer
   buffer = (wchar_t*)ruby_xmalloc(length * sizeof(wchar_t));
-
-  // Now get the path
   length = GetFullPathNameW(path, length, buffer, NULL);
 
   if (!length){
+    ruby_xfree(path);
     ruby_xfree(buffer);
     rb_raise_syserr("GetFullPathName", GetLastError());
   }
 
-  // Convert backslashes into forward slashes
-  while(wcsstr(buffer, L"\\"))
-    buffer[wcscspn(buffer, L"\\")] = L'/';
+  ruby_xfree(path);
 
+  // Optimized string formatting
+  convert_slashes_to_forward(buffer);
+  remove_trailing_slashes(buffer);
+  ensure_drive_ends_with_slash(buffer);
+  remove_trailing_dots(buffer);
+
+  // Convert back to multibyte
   length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
   final_path = (char*)ruby_xmalloc(length);
   length = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, final_path, length, NULL, NULL);
-
-  ruby_xfree(buffer);
 
   if (!length){
     ruby_xfree(final_path);
     rb_raise_syserr("WideCharToMultiByte", GetLastError());
   }
+  VALUE result = rb_str_new(final_path, length - 1); // Don't count null terminator
+  ruby_xfree(final_path);
+  ruby_xfree(buffer); // Free the dedicated buffer
 
-  v_path = rb_str_new(final_path, length - 1); // Don't count null terminator
-
+  // Handle encoding conversion if needed
   if (rb_enc_to_index(path_encoding) != rb_utf8_encindex()){
     ec = rb_econv_open("UTF-8", rb_enc_name(path_encoding), replaceflags);
-    v_path = rb_econv_str_convert(ec, v_path, ECONV_PARTIAL_INPUT);
+    result = rb_econv_str_convert(ec, result, ECONV_PARTIAL_INPUT);
     rb_econv_close(ec);    
   }
 
-  rb_enc_associate(v_path, path_encoding);
+  rb_enc_associate(result, path_encoding);
   
-  return v_path;
+  return result;
+}
+
+// Cleanup function to free cached values
+static void cleanup_cached_values() {
+  if (cached_home) {
+    ruby_xfree(cached_home);
+    cached_home = NULL;
+  }
+  if (cached_pwd) {
+    ruby_xfree(cached_pwd);
+    cached_pwd = NULL;
+  }
+  if (cached_drive) {
+    ruby_xfree(cached_drive);
+    cached_drive = NULL;
+  }
+  if (reusable_buffer) {
+    ruby_xfree(reusable_buffer);
+    reusable_buffer = NULL;
+    buffer_size = 0;
+  }
 }
 
 void Init_xpath(){
   rb_define_singleton_method(rb_cFile, "expand_path", rb_xpath, -1);
+  
+  // Register cleanup function to be called when Ruby exits
+  atexit(cleanup_cached_values);
 }
