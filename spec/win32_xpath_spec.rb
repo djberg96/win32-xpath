@@ -41,6 +41,7 @@ RSpec.describe 'win32-xpath' do
   example "converts relative path and directory into the expected absolute pathname" do
     expect(File.expand_path2('foo', 'bar')).to eq(File.join(@pwd, 'bar', 'foo'))
   end
+=end
 
   example "converts relative edge case pathnames into absolute pathnames" do
     expect(File.expand_path2('a.')).to eq(File.join(@pwd, 'a'))
@@ -49,6 +50,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('a../b')).to eq(File.join(@pwd, 'a../b'))
   end
 
+=begin
   example "converts a double dot pathname into the expected absolute pathname" do
     expect( File.expand_path2('a..')).to eq(File.join(@pwd, 'a'))
   end
