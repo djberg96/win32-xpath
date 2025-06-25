@@ -37,6 +37,14 @@ class File
       return Dir.pwd
     end
 
+    if path[0].chr == '~'
+      home = ENV['HOME'] || ENV['USERPROFILE']
+      home ||= ENV['HOMEDRIVE'] + ENV['HOMEPATH'] if ENV['HOMEDRIVE']
+      raise ArgumentError unless home
+      raise ArgumentError if PathIsRelative(home)
+      path = home + path[1..-1]
+    end
+
     path.chop! while ['/', '\\'].include?(path[-1])
 
     if PathIsRoot(path)

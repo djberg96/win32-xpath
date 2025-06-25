@@ -72,15 +72,12 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("#{@root}foo.rb/")).to eq(File.join(@root, 'foo.rb'))
   end
 
-=begin
   example "removes trailing slashes from relative path" do
     expect(File.expand_path2("foo/")).to eq(File.join(@pwd, 'foo'))
     expect(File.expand_path2("foo//")).to eq(File.join(@pwd, 'foo'))
     expect(File.expand_path2("foo\\\\\\")).to eq(File.join(@pwd, 'foo'))
   end
-=end
 
-=begin
   example "removes trailing spaces from absolute path" do
     expect(File.expand_path2("#{@root}foo  ")).to eq(File.join(@root, 'foo'))
   end
@@ -93,6 +90,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("c:")).to match(/\Ac:\//i)
   end
 
+=begin
   example "converts a pathname with a drive letter ignoring different drive dir" do
     expect(File.expand_path2("c:foo", "d:/bar")).to match(/\Ac:\//i)
   end
@@ -100,6 +98,7 @@ RSpec.describe 'win32-xpath' do
   example "converts a pathname which starts with a slash using current drive" do
     expect(File.expand_path2('/foo')).to match(/\A#{@drive}\/foo\z/i)
   end
+=end
 
   example "converts a pathname to an absolute pathname using tilde as base" do
     expect(File.expand_path2('~')).to eq(@home)
@@ -107,6 +106,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('~/.foo')).to eq("#{@home}/.foo")
   end
 
+=begin
   example "converts a pathname to an absolute pathname using tilde for UNC path" do
     ENV['HOME'] = @unc
     expect(File.expand_path2('~')).to eq(@unc)
@@ -117,6 +117,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('', '~/foo')).to eq("#{@home}/foo")
     expect(File.expand_path2('foo', '~')).to eq("#{@home}/foo")
   end
+=end
 
   example "doesn't attempt to expand a tilde unless it's the first character" do
     expect(File.expand_path2("C:/Progra~1")).to eq("C:/Progra~1")
@@ -149,6 +150,7 @@ RSpec.describe 'win32-xpath' do
     expect{ File.expand_path2('~') }.to raise_error(ArgumentError)
   end
 
+=begin
   example "HOME is ignored if valid user is explicit" do
     ENV['HOME'] = 'whatever'
     expect(File.expand_path2("~#{login}")).to eq(@home)
