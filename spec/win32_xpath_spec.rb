@@ -168,12 +168,15 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("~#{login}")).to eq("C:/Users/#{login}")
     expect(File.expand_path2("~#{login}/foo")).to eq("C:/Users/#{login}/foo")
   end
+=end
 
   example "raises a TypeError if not passed a string" do
     expect{ File.expand_path2(1) }.to raise_error(TypeError)
     expect{ File.expand_path2(nil) }.to raise_error(TypeError)
     expect{ File.expand_path2(true) }.to raise_error(TypeError)
   end
+
+=begin
 
   example "canonicalizes absolute path" do
     expect(File.expand_path2("C:/./dir")).to eq("C:/dir")

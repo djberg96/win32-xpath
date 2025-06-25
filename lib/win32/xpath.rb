@@ -31,6 +31,10 @@ class File
 
   def self.expand_path2(path, dir=nil)
     path = path.dup
+    path = path.to_path if path.respond_to?(:to_path)
+
+    raise TypeError unless path.is_a?(String)
+
     flags = PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH | PATHCCH_CANONICALIZE_SLASHES
 
     if ['', '.'].include?(path) && dir.nil?
