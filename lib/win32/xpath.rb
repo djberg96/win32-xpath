@@ -5,77 +5,48 @@ class File
 
   typedef :ulong, :dword
 
-  ffi_lib 'shlwapi'
+  ffi_lib 'kernel32'
 
-  attach_function :PathCanonicalize, :PathCanonicalizeA, [:pointer, :string], :bool
-  attach_function :PathIsRelative, :PathIsRelativeA, [:string], :bool
-  attach_function :PathIsRoot, :PathIsRootA, [:string], :bool
-  attach_function :PathRemoveBackslash, :PathRemoveBackslashA, [:string], :string
+  attach_function :GetFullPathNameW, [:pointer, :ulong, :pointer, :pointer], :ulong
 
-  ffi_lib 'api-ms-win-core-path-l1-1-0'
-
-  attach_function :PathAllocCanonicalize, [:string, :dword, :buffer_in], :int
-
-  S_OK = 0
-
-  PATHCCH_NONE = 0x0000000
-  PATHCCH_ALLOW_LONG_PATHS = 0x00000001
-  PATHCCH_FORCE_ENABLE_LONG_NAME_PROCESS = 0x00000002
-  PATHCCH_FORCE_DISABLE_LONG_NAME_PROCESS = 0x00000004
-  PATHCCH_DO_NOT_NORMALIZE_SEGMENTS = 0x00000008
-  PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH = 0x00000010
-  PATHCCH_ENSURE_TRAILING_SLASH = 0x00000020
-  PATHCCH_CANONICALIZE_SLASHES = 0x00000040
-
-  MAX_PATH = 256
+  MAX_PATH = 260
 
   def self.expand_path2(path, dir=nil)
-    path = path
+    path = path.dup
     path = path.to_path if path.respond_to?(:to_path)
 
     raise TypeError unless path.is_a?(String)
 
-    # Necessary for most PathXXX functions to work properly.
-    path = path.tr('/', '\\')
+    return Dir.pwd if path.empty?
 
-    flags = PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH | PATHCCH_CANONICALIZE_SLASHES
+    wide_path = (path + "\0").encode('UTF-16LE')
+    path_ptr = FFI::MemoryPointer.new(:char, wide_path.bytesize)
+    path_ptr.put_bytes(0, wide_path)
 
-    if ['', '.'].include?(path) && dir.nil?
-      return Dir.pwd
+    buffer = FFI::MemoryPointer.new(:char, MAX_PATH * 2)  # Wide chars are 2 bytes
+    file_part = FFI::MemoryPointer.new(:pointer)
+
+    result = GetFullPathNameW(path_ptr, MAX_PATH, buffer, file_part)
+
+    if result == 0
+      raise SystemCallError.new('GetFullPathNameW failed')
     end
 
-    if path[0] == '~'
-      home = ENV['HOME'] || ENV['USERPROFILE']
-      home ||= ENV['HOMEDRIVE'] + ENV['HOMEPATH'] if ENV['HOMEDRIVE']
-      raise ArgumentError unless home
-      raise ArgumentError if PathIsRelative(home)
-      path = home + path[1..-1]
+    if result > MAX_PATH
+      # Buffer was too small, need larger buffer
+      buffer = FFI::MemoryPointer.new(:char, result * 2)
+      result = GetFullPathNameW(path_ptr, result, buffer, file_part)
+      raise SystemCallError.new('GetFullPathNameW failed on retry') if result == 0
     end
 
-    path.chop! while ['/', '\\'].include?(path[-1])
-
-    if PathIsRoot(path)
-      return path.tr('\\', '/')
-    end
-
-    buffer = 0.chr * MAX_PATH
-
-    bool = PathCanonicalize(buffer, path)
-    raise SystemCallError.new('PathCanonicalize') unless bool
-
-    result = buffer.strip
-
-
-    if PathIsRelative(result)
-      result = File.join(Dir.pwd, result)
-    end
-
-    result.encode(Encoding.default_external).tr('\\', '/')
+    # Read as UTF-16LE and convert back
+    result_bytes = buffer.read_bytes(result * 2)
+    result_bytes.force_encoding('UTF-16LE').encode('UTF-8').tr('\\', '/')
   end
 end
 
 if $0 == __FILE__
+  p File.expand_path('.')
+  p File.expand_path('~')
   p File.expand_path('foo')
-  p File.expand_path('.')
-  p File.expand_path('.')
 end

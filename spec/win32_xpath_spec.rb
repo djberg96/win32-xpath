@@ -33,15 +33,14 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('foo')).to eq(File.join(@pwd, 'foo'))
   end
 
-=begin
   example "converts relative path into absolute pathname ignoring nil dir" do
     expect(File.expand_path2('foo', nil)).to eq(File.join(@pwd, 'foo'))
   end
 
+=begin
   example "converts relative path and directory into the expected absolute pathname" do
     expect(File.expand_path2('foo', 'bar')).to eq(File.join(@pwd, 'bar', 'foo'))
   end
-=end
 
   example "converts relative edge case pathnames into absolute pathnames" do
     expect(File.expand_path2('a.')).to eq(File.join(@pwd, 'a'))
@@ -53,7 +52,6 @@ RSpec.describe 'win32-xpath' do
   example "converts a double dot pathname into the expected absolute pathname" do
     expect( File.expand_path2('a..')).to eq(File.join(@pwd, 'a'))
   end
-=begin
 
   example "converts a pathname to an absolute pathname using a complete path" do
     expect(File.expand_path2('', @tmp)).to eq(@tmp)
@@ -61,7 +59,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('../a', "#{@tmp}/xxx")).to eq(File.join(@tmp, 'a'))
     expect(File.expand_path2('.', @root)).to eq(@root)
   end
-=end
 
   example "ignores supplied dir if path contains a drive letter" do
     expect(File.expand_path2(@root, "D:/")).to eq(@root)
@@ -90,7 +87,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("c:")).to match(/\Ac:\//i)
   end
 
-=begin
   example "converts a pathname with a drive letter ignoring different drive dir" do
     expect(File.expand_path2("c:foo", "d:/bar")).to match(/\Ac:\//i)
   end
@@ -98,7 +94,6 @@ RSpec.describe 'win32-xpath' do
   example "converts a pathname which starts with a slash using current drive" do
     expect(File.expand_path2('/foo')).to match(/\A#{@drive}\/foo\z/i)
   end
-=end
 
   example "converts a pathname to an absolute pathname using tilde as base" do
     expect(File.expand_path2('~')).to eq(@home)
@@ -106,7 +101,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('~/.foo')).to eq("#{@home}/.foo")
   end
 
-=begin
   example "converts a pathname to an absolute pathname using tilde for UNC path" do
     ENV['HOME'] = @unc
     expect(File.expand_path2('~')).to eq(@unc)
@@ -117,7 +111,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('', '~/foo')).to eq("#{@home}/foo")
     expect(File.expand_path2('foo', '~')).to eq("#{@home}/foo")
   end
-=end
 
   example "doesn't attempt to expand a tilde unless it's the first character" do
     expect(File.expand_path2("C:/Progra~1")).to eq("C:/Progra~1")
@@ -150,7 +143,6 @@ RSpec.describe 'win32-xpath' do
     expect{ File.expand_path2('~') }.to raise_error(ArgumentError)
   end
 
-=begin
   example "HOME is ignored if valid user is explicit" do
     ENV['HOME'] = 'whatever'
     expect(File.expand_path2("~#{login}")).to eq(@home)
@@ -168,7 +160,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("~#{login}")).to eq("C:/Users/#{login}")
     expect(File.expand_path2("~#{login}/foo")).to eq("C:/Users/#{login}/foo")
   end
-=end
 
   example "raises a TypeError if not passed a string" do
     expect{ File.expand_path2(1) }.to raise_error(TypeError)
@@ -180,7 +171,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("C:/./dir")).to eq("C:/dir")
   end
 
-=begin
   example "does not modify its argument" do
     str = "./a/b/../c"
     expect(File.expand_path2(str, @home)).to eq("#{@home}/a/c")
