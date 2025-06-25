@@ -1,10 +1,15 @@
-require 'ffi'
+# Try to load the C extension first, fall back to Ruby FFI implementation
+begin
+  require 'win32/xpath.so'  # C extension
+rescue LoadError
+  # Fall back to Ruby FFI implementation
+  require 'ffi'
 
-class File
-  extend FFI::Library
-  ffi_lib :kernel32, :advapi32, :shlwapi
-  typedef :ulong, :dword
-  typedef :uintptr_t, :handle
+  class File
+    extend FFI::Library
+    ffi_lib :kernel32, :advapi32, :shlwapi
+    typedef :ulong, :dword
+    typedef :uintptr_t, :handle
   attach_function :GetCurrentDirectory, :GetCurrentDirectoryA, [:dword, :pointer], :dword
   attach_function :GetFullPathName, :GetFullPathNameA, [:string, :dword, :pointer, :pointer], :dword
   attach_function :LookupAccountName, :LookupAccountNameA, [:pointer, :string, :pointer, :pointer, :pointer, :pointer, :pointer], :bool
@@ -303,9 +308,10 @@ class File
   def self.absolute_path?(path)
     path =~ ABSOLUTE_PATH_REGEX
   end
-
   # Keep original method name for backward compatibility but use optimized version
   def self.formatted_windows_string(buffer)
     format_windows_string_fast(buffer)
   end
 end
+
+end  # End of rescue LoadError block
