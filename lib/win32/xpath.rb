@@ -30,10 +30,13 @@ class File
   MAX_PATH = 256
 
   def self.expand_path2(path, dir=nil)
-    path = path.dup
+    path = path
     path = path.to_path if path.respond_to?(:to_path)
 
     raise TypeError unless path.is_a?(String)
+
+    # Necessary for most PathXXX functions to work properly.
+    path = path.tr('/', '\\')
 
     flags = PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH | PATHCCH_CANONICALIZE_SLASHES
 
@@ -52,7 +55,7 @@ class File
     path.chop! while ['/', '\\'].include?(path[-1])
 
     if PathIsRoot(path)
-      return path
+      return path.tr('\\', '/')
     end
 
     buffer = 0.chr * MAX_PATH
@@ -62,7 +65,8 @@ class File
 
     result = buffer.strip
 
-    if PathIsRelative(path)
+
+    if PathIsRelative(result)
       result = File.join(Dir.pwd, result)
     end
 
