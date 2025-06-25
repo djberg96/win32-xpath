@@ -2,14 +2,19 @@ require 'ffi'
 
 class File
   extend FFI::Library
+
+  typedef :ulong, :dword
+
   ffi_lib 'shlwapi'
 
   attach_function :PathCanonicalize, :PathCanonicalizeA, [:pointer, :string], :bool
   attach_function :PathIsRelative, :PathIsRelativeA, [:string], :bool
+  attach_function :PathIsRoot, :PathIsRootA, [:string], :bool
+  attach_function :PathRemoveBackslash, :PathRemoveBackslashA, [:string], :string
 
   ffi_lib 'api-ms-win-core-path-l1-1-0'
 
-  typedef :ulong, :dword
+  attach_function :PathAllocCanonicalize, [:string, :dword, :buffer_in], :int
 
   S_OK = 0
 
@@ -24,40 +29,32 @@ class File
 
   MAX_PATH = 256
 
-  attach_function :PathAllocCanonicalize, [:string, :dword, :buffer_in], :int
-
   def self.expand_path2(path, dir=nil)
+    path = path.dup
     flags = PATHCCH_ENSURE_IS_EXTENDED_LENGTH_PATH | PATHCCH_CANONICALIZE_SLASHES
 
     if ['', '.'].include?(path) && dir.nil?
       return Dir.pwd
     end
 
-    if !PathIsRelative(path)
+    path.chop! while ['/', '\\'].include?(path[-1])
+
+    if PathIsRoot(path)
       return path
     end
 
-    #buffer = FFI::MemoryPointer.new(MAX_PATH)
     buffer = 0.chr * MAX_PATH
-    #result = PathAllocCanonicalize(path, flags, buffer)
 
     bool = PathCanonicalize(buffer, path)
+    raise SystemCallError.new('PathCanonicalize') unless bool
 
-    #if result != S_OK
-    if !bool
-      #raise SystemCallError.new('PathAllocCanonicalize')
-      raise SystemCallError.new('PathCanonicalize')
-    end
-
-    #result = buffer.read_pointer.read_string.tr('\\', '/').encode('UTF-8')
-    #result = buffer.read_pointer.read_string.tr('\\', '/').encode('UTF-8')
     result = buffer.strip
 
     if PathIsRelative(path)
       result = File.join(Dir.pwd, result)
     end
 
-    result
+    result.encode(Encoding.default_external).tr('\\', '/')
   end
 end
 
