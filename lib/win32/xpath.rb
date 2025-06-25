@@ -37,7 +37,7 @@ class File
       return Dir.pwd
     end
 
-    if path[0].chr == '~'
+    if path[0] == '~'
       home = ENV['HOME'] || ENV['USERPROFILE']
       home ||= ENV['HOMEDRIVE'] + ENV['HOMEPATH'] if ENV['HOMEDRIVE']
       raise ArgumentError unless home
