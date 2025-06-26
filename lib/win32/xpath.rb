@@ -34,6 +34,13 @@ class File
       end
     end
 
+    if path.start_with?('~')
+      home = ENV['HOME'] || ENV['USERPROFILE']
+      home ||= ENV['HOMEDRIVE'] + ENV['HOMEPATH'] if ENV['HOMEDRIVE']
+      raise ArgumentError unless home
+      path = File.join(home, path[1..-1])
+    end
+
     wide_path = (path + "\0").encode('UTF-16LE')
     path_ptr = FFI::MemoryPointer.new(:char, wide_path.bytesize)
     path_ptr.put_bytes(0, wide_path)
