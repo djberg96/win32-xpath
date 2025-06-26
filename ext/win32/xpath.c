@@ -3,17 +3,13 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <sddl.h>
+#include <pathcch.h>
 
 #ifdef __MINGW32__
 #define swprintf _snwprintf 
 #endif
 
-#ifdef HAVE_PATHCCH_H
-#include <pathcch.h>
 #define MAX_WPATH PATHCCH_MAX_CCH
-#else
-#define MAX_WPATH MAX_PATH * sizeof(wchar_t)
-#endif
 
 // Equivalent to raise SystemCallError.new(string, errnum)
 void rb_raise_syserr(const char* msg, DWORD errnum){
@@ -139,9 +135,7 @@ wchar_t* expand_tilde(){
     wchar_t* temp;
     const wchar_t* env2 = L"HOMEPATH";
     env = L"HOMEDRIVE";
-#ifdef HAVE_PATHCCH_H
     HRESULT hr;
-#endif
 
     // If neither are found then raise an error
     size =  GetEnvironmentVariableW(env, NULL, 0);
@@ -163,22 +157,15 @@ wchar_t* expand_tilde(){
       rb_raise_syserr("GetEnvironmentVariable", GetLastError());
     }
 
-#ifdef HAVE_PATHCCH_H
     hr = PathCchAppendEx(home, MAX_WPATH, temp, 1);
+
     if(hr != S_OK){
       ruby_xfree(home);
       ruby_xfree(temp);
       rb_raise_syserr("PathCchAppendEx", hr);
     }
-#else
-    if(!PathAppendW(home, temp)){
-      ruby_xfree(home);
-      ruby_xfree(temp);
-      rb_raise_syserr("PathAppend", GetLastError());
-    }
 
     ruby_xfree(temp);
-#endif
   }
   else{
     home = (wchar_t*)ruby_xmalloc(MAX_WPATH);
@@ -277,7 +264,6 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       home = find_user(++ptr);
     }
     else{
-#ifdef HAVE_PATHCCHAPPENDEX
       HRESULT hr;
       home = expand_tilde();
 
@@ -287,14 +273,6 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
         ruby_xfree(home);
         rb_raise_syserr("PathCchAppendEx", hr);
       }
-#else
-      home = expand_tilde();
-
-      if (!PathAppendW(home, ++ptr)){
-        ruby_xfree(home);
-        rb_raise_syserr("PathAppend", GetLastError());
-      }
-#endif
     }
 
     path = home;
@@ -305,9 +283,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
     wchar_t* dir;
     VALUE v_dir;
     rb_encoding* dir_encoding;
-#ifdef HAVE_PATHCCH_H
     HRESULT hr;
-#endif
 
     dir_encoding = rb_enc_get(v_dir_orig);
 
@@ -343,19 +319,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       else{
         dir = expand_tilde();
 
-#ifdef HAVE_PATHCCH_H
         hr = PathCchAppendEx(dir, MAX_WPATH, ++ptr, 1);
 
         if(hr != S_OK){
           ruby_xfree(dir);
           rb_raise_syserr("PathCchAppendEx", hr);
         }
-#else
-        if (!PathAppendW(dir, ++ptr)){
-          ruby_xfree(dir);
-          rb_raise_syserr("PathAppend", GetLastError());
-        }
-#endif
       }
     }
 
@@ -363,20 +332,12 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
       path = dir;
 
     if (PathIsRelativeW(path)){ 
-
-#ifdef HAVE_PATHCCH_H
       hr = PathCchAppendEx(dir, MAX_WPATH, path, 1);
 
       if(hr != S_OK){
         ruby_xfree(dir);
         rb_raise_syserr("PathCchAppendEx", hr);
       }
-#else
-      if(!PathAppendW(dir, path)){
-        ruby_xfree(dir);
-        rb_raise_syserr("PathAppend", GetLastError());
-      }
-#endif
 
       // Remove leading slashes from relative paths
       if (dir[0] == L'\\')
@@ -422,11 +383,7 @@ static VALUE rb_xpath(int argc, VALUE* argv, VALUE self){
   }
 
   // Strip all trailing backslashes
-#ifdef HAVE_PATHCCH_H
   while (PathCchRemoveBackslash(path, wcslen(path)+1) == S_OK);
-#else
-  while (!*PathRemoveBackslashW(path));
-#endif
 
   // First call, get the length
   length = GetFullPathNameW(path, 0, buffer, NULL);
