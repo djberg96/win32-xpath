@@ -1,6 +1,6 @@
 require 'benchmark'
 
-MAX = 400000
+MAX = 100000
 puts "\nOld File.expand_path"
 
 Benchmark.bm(30) do |x|
