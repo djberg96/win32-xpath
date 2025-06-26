@@ -13,6 +13,7 @@ class File
   attach_function :RegQueryValueEx, :RegQueryValueExA, [:ulong, :string, :pointer, :pointer, :pointer, :pointer], :long
   attach_function :RegCloseKey, [:ulong], :long
   attach_function :LocalFree, [:pointer], :handle
+
   MAX_PATH = 260
   HKEY_LOCAL_MACHINE = 0x80000002
   KEY_QUERY_VALUE = 0x0001
@@ -34,6 +35,7 @@ class File
   # Reusable buffers to reduce allocations
   @reusable_buffer = nil
   @buffer_size = 0
+
   def self.expand_path(path, dir=nil)
     # Fast path: handle type checking and conversion with minimal overhead
     path = path.respond_to?(:to_path) ? path.to_path : path
@@ -240,13 +242,13 @@ class File
 
   def self.get_user_home_directory(username)
     # Optimize: Pre-allocate known buffer sizes
-    sid_buffer = FFI::MemoryPointer.new(:char, 256)
+    sid_buffer = FFI::MemoryPointer.new(:char, 68)
     domain_buffer = FFI::MemoryPointer.new(:char, 256)
     sid_size = FFI::MemoryPointer.new(:ulong, 1)
     domain_size = FFI::MemoryPointer.new(:ulong, 1)
     sid_name_use = FFI::MemoryPointer.new(:int, 1)
 
-    sid_size.write_ulong(256)
+    sid_size.write_ulong(68)
     domain_size.write_ulong(256)
 
     # Look up the user account
