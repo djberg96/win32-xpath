@@ -12,6 +12,7 @@ class File
   ffi_lib 'shlwapi'
 
   attach_function :PathIsRelativeW, [:buffer_in], :bool
+  attach_function :PathRemoveBackslashW, [:pointer], :string
 
   MAX_PATH = 260
 
@@ -55,7 +56,11 @@ class File
 
     # Read as UTF-16LE and convert back
     result_bytes = buffer.read_bytes(result * 2)
-    result_bytes.force_encoding('UTF-16LE').encode('UTF-8').tr('\\', '/')
+    path = result_bytes.force_encoding('UTF-16LE').encode('UTF-8').tr('\\', '/')
+
+    path.chop! while path[-1] == '/' && path[-2] != ':'
+
+    path
   end
 end
 

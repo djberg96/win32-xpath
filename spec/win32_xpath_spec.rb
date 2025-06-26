@@ -63,7 +63,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2(@root, "D:/")).to eq(@root)
   end
 
-=begin
   example "removes trailing slashes from absolute path" do
     expect(File.expand_path2("#{@root}foo/")).to eq(File.join(@root, 'foo'))
     expect(File.expand_path2("#{@root}foo.rb/")).to eq(File.join(@root, 'foo.rb'))
@@ -79,6 +78,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2("#{@root}foo  ")).to eq(File.join(@root, 'foo'))
   end
 
+=begin
   example "removes trailing dots from absolute path" do
     expect(File.expand_path2("#{@root}a.")).to eq(File.join(@root, 'a'))
   end
