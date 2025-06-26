@@ -37,7 +37,7 @@ namespace :gem do
 end
 
 desc "Run benchmarks"
-task :bench => [:build] do
+task :bench do
   ruby "-Ilib bench/bench_win32_xpath.rb"
 end
 
