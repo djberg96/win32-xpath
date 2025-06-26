@@ -38,6 +38,7 @@ class File
       home = ENV['HOME'] || ENV['USERPROFILE']
       home ||= ENV['HOMEDRIVE'] + ENV['HOMEPATH'] if ENV['HOMEDRIVE']
       raise ArgumentError unless home
+      raise ArgumentError if home !~ /^[a-z]{1}\:/i
       path = File.join(home, path[1..-1])
     end
 
