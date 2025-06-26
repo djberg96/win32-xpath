@@ -9,6 +9,10 @@ class File
 
   attach_function :GetFullPathNameW, [:pointer, :ulong, :pointer, :pointer], :ulong
 
+  ffi_lib 'shlwapi'
+
+  attach_function :PathIsRelativeW, [:buffer_in], :bool
+
   MAX_PATH = 260
 
   def self.expand_path2(path, dir=nil)
@@ -17,7 +21,17 @@ class File
 
     raise TypeError unless path.is_a?(String)
 
-    return Dir.pwd if path.empty?
+    if path.empty?
+      if dir
+        path = dir
+      else
+        return Dir.pwd
+      end
+    else
+      if dir
+        path = File.join(dir, path)
+      end
+    end
 
     wide_path = (path + "\0").encode('UTF-16LE')
     path_ptr = FFI::MemoryPointer.new(:char, wide_path.bytesize)

@@ -37,7 +37,6 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2('foo', nil)).to eq(File.join(@pwd, 'foo'))
   end
 
-=begin
   example "converts relative path and directory into the expected absolute pathname" do
     expect(File.expand_path2('foo', 'bar')).to eq(File.join(@pwd, 'bar', 'foo'))
   end
@@ -64,6 +63,7 @@ RSpec.describe 'win32-xpath' do
     expect(File.expand_path2(@root, "D:/")).to eq(@root)
   end
 
+=begin
   example "removes trailing slashes from absolute path" do
     expect(File.expand_path2("#{@root}foo/")).to eq(File.join(@root, 'foo'))
     expect(File.expand_path2("#{@root}foo.rb/")).to eq(File.join(@root, 'foo.rb'))
